@@ -1,0 +1,13 @@
+# ============================================================
+# 数据库连接配置模板
+# 用法：复制本文件为 connection.ini，填入真实值。
+# connection.ini 在 .gitignore 中，绝不提交到仓库。
+# 建议使用只读账号 data_agent（见 mock_data/setup.sql.example）。
+# ============================================================
+[database]
+host = localhost
+port = 3306
+user = data_agent
+password = 在这里设置你的密码
+database = jd_demo
+charset = utf8mb4

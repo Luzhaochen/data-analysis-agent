@@ -1,0 +1,8 @@
+{
+  "default_row_limit": 1000,
+  "hard_row_limit": 10000,
+  "timeout_s": 30,
+  "display_threshold_rows": 50,
+  "enforce_readonly": true,
+  "retry_max": 3
+}
