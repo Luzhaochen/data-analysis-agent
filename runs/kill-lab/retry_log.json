@@ -1,0 +1,14 @@
+[
+  {
+    "ts": "2026-09-14T22:13:10",
+    "status": "error",
+    "dry_run": false,
+    "sql": "SELECT SLEEP(1000) LIMIT 1001",
+    "error_type": "TIMEOUT_ERROR",
+    "error_code": 2013,
+    "message": "Lost connection to MySQL server during query",
+    "suggestion": "查询超过 120s 被中断：缩小时间范围、先聚合再取明细；确需更长可调 config/analysis.json 的 timeout_s。",
+    "elapsed_ms": 112140.0,
+    "attempt": 1
+  }
+]

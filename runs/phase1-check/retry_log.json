@@ -1,0 +1,174 @@
+[
+  {
+    "ts": "2026-09-14T19:35:48",
+    "status": "error",
+    "dry_run": false,
+    "sql": "SELECT not_a_col FROM orders LIMIT 1000",
+    "error_type": "FIELD_ERROR",
+    "error_code": 1054,
+    "message": "Unknown column 'not_a_col' in 'field list'",
+    "suggestion": "字段/表不存在或歧义：先调 get_metadata.py 拿真实 schema，再修正字段名与表前缀。",
+    "elapsed_ms": 209.1,
+    "attempt": 1
+  },
+  {
+    "ts": "2026-09-14T19:35:49",
+    "status": "error",
+    "dry_run": false,
+    "sql": "SELECT * FROM orders WHERE order_dt > 'abc' LIMIT 1000",
+    "error_type": "UNKNOWN_ERROR",
+    "error_code": 1525,
+    "message": "Incorrect DATE value: 'abc'",
+    "suggestion": "未收录的错误码：把 message 与 memory/sql_syntax.md 对照检查，并把该错误码补进 _lib/database_client.py 顶部的映射表。",
+    "elapsed_ms": 48.2,
+    "attempt": 2
+  },
+  {
+    "ts": "2026-09-14T19:35:49",
+    "status": "error",
+    "dry_run": false,
+    "sql": "SELECT * FROM mysql.user LIMIT 1000",
+    "error_type": "PERMISSION_ERROR",
+    "error_code": 1142,
+    "message": "SELECT command denied to user 'data_agent'@'localhost' for table 'user'",
+    "suggestion": "权限/只读策略拒绝，不重试：本环境账号为 SELECT-only；写操作请用 root 在 Workbench 手工执行。",
+    "elapsed_ms": 43.2,
+    "attempt": 3
+  },
+  {
+    "ts": "2026-09-14T19:36:47",
+    "status": "error",
+    "dry_run": false,
+    "sql": "SELEC * FROM orders",
+    "error_type": "SYNTAX_ERROR",
+    "error_code": 1064,
+    "message": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'SELEC * FROM orders' at line 1",
+    "suggestion": "语法错误：对照 memory/sql_syntax.md 检查关键字、括号、别名与引号。",
+    "elapsed_ms": 46.7,
+    "attempt": 4
+  },
+  {
+    "ts": "2026-09-14T19:36:47",
+    "status": "error",
+    "dry_run": false,
+    "sql": "SELECT * FROM orders WHERE order_dt > 'abc' LIMIT 1000",
+    "error_type": "PARTITION_ERROR",
+    "error_code": 1525,
+    "message": "Incorrect DATE value: 'abc'",
+    "suggestion": "时间字段的值格式错或类型不匹配：日期比较统一用 'YYYY-MM-DD' 字符串，先 get_metadata.py 确认字段类型，见 memory/sql_syntax.md 日期规则。",
+    "elapsed_ms": 39.3,
+    "attempt": 5
+  },
+  {
+    "ts": "2026-09-14T19:36:49",
+    "status": "ok",
+    "dry_run": false,
+    "sql": "SELECT order_status, COUNT(*) AS n FROM orders GROUP BY order_status LIMIT 1000",
+    "row_count": 3,
+    "truncated": false,
+    "elapsed_ms": 304.4,
+    "attempt": 6
+  },
+  {
+    "ts": "2026-09-14T19:36:49",
+    "status": "ok",
+    "dry_run": true,
+    "sql": "SELECT o.order_id, i.gmv FROM orders o JOIN order_items i ON o.order_id = i.order_id WHERE o.order_dt >= '2026-06-01' LIMIT 1000",
+    "row_count": 2,
+    "truncated": false,
+    "elapsed_ms": 61.2,
+    "attempt": 7
+  },
+  {
+    "ts": "2026-09-14T19:37:29",
+    "status": "ok",
+    "dry_run": false,
+    "sql": "SELECT order_dt, COUNT(*) AS n FROM orders GROUP BY order_dt ORDER BY order_dt DESC LIMIT 5",
+    "row_count": 5,
+    "truncated": false,
+    "elapsed_ms": 41.9,
+    "attempt": 8
+  },
+  {
+    "ts": "2026-09-14T19:37:29",
+    "status": "ok",
+    "dry_run": false,
+    "sql": "SELECT order_status, COUNT(*) AS n, ROUND(AVG(pay_amt),2) AS avg_pay FROM orders WHERE order_dt >= '2026-06-01' GROUP BY order_status LIMIT 1000",
+    "row_count": 3,
+    "truncated": false,
+    "elapsed_ms": 796.3,
+    "attempt": 9
+  },
+  {
+    "ts": "2026-09-14T19:37:30",
+    "status": "ok",
+    "dry_run": false,
+    "sql": "SELECT order_id FROM orders LIMIT 2",
+    "row_count": 2,
+    "truncated": false,
+    "elapsed_ms": 40.2,
+    "attempt": 10
+  },
+  {
+    "ts": "2026-09-14T19:37:30",
+    "status": "ok",
+    "dry_run": false,
+    "sql": "SELECT * FROM categories LIMIT 10000",
+    "row_count": 13,
+    "truncated": false,
+    "elapsed_ms": 57.2,
+    "attempt": 11
+  },
+  {
+    "ts": "2026-09-14T19:38:28",
+    "status": "ok",
+    "dry_run": false,
+    "sql": "SELECT order_id FROM orders LIMIT 3",
+    "row_count": 2,
+    "truncated": true,
+    "elapsed_ms": 44.0,
+    "attempt": 12
+  },
+  {
+    "ts": "2026-09-14T19:38:29",
+    "status": "ok",
+    "dry_run": false,
+    "sql": "SELECT * FROM orders LIMIT 10001",
+    "row_count": 1000,
+    "truncated": true,
+    "elapsed_ms": 173.8,
+    "attempt": 13
+  },
+  {
+    "ts": "2026-09-14T19:38:59",
+    "status": "ok",
+    "dry_run": false,
+    "sql": "SELECT SLEEP(31) LIMIT 1001",
+    "row_count": 1,
+    "truncated": false,
+    "elapsed_ms": 30054.9,
+    "attempt": 14
+  },
+  {
+    "ts": "2026-09-14T19:39:26",
+    "status": "ok",
+    "dry_run": false,
+    "sql": "SELECT COUNT(*) AS c FROM orders o CROSS JOIN order_items i LIMIT 1001",
+    "row_count": 1,
+    "truncated": false,
+    "elapsed_ms": 446.2,
+    "attempt": 15
+  },
+  {
+    "ts": "2026-09-14T19:40:07",
+    "status": "error",
+    "dry_run": false,
+    "sql": "SELECT o.order_id, SUM(i.gmv) AS s FROM orders o CROSS JOIN order_items i GROUP BY o.order_id LIMIT 1001",
+    "error_type": "TIMEOUT_ERROR",
+    "error_code": 3024,
+    "message": "Query execution was interrupted, maximum statement execution time exceeded",
+    "suggestion": "查询超过 30s 被中断：缩小时间范围、先聚合再取明细；确需更长可调 config/analysis.json 的 timeout_s。",
+    "elapsed_ms": 30053.2,
+    "attempt": 16
+  }
+]

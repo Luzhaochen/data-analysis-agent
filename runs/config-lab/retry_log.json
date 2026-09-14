@@ -1,0 +1,32 @@
+[
+  {
+    "ts": "2026-09-14T21:48:38",
+    "status": "ok",
+    "dry_run": false,
+    "sql": "SELECT * FROM orders LIMIT 6",
+    "row_count": 5,
+    "truncated": true,
+    "elapsed_ms": 48.6,
+    "attempt": 1
+  },
+  {
+    "ts": "2026-09-14T21:48:57",
+    "status": "ok",
+    "dry_run": false,
+    "sql": "SELECT SLEEP(8) LIMIT 6",
+    "row_count": 1,
+    "truncated": false,
+    "elapsed_ms": 5046.6,
+    "attempt": 2
+  },
+  {
+    "ts": "2026-09-14T21:49:02",
+    "status": "ok",
+    "dry_run": false,
+    "sql": "SELECT SLEEP(15) LIMIT 6",
+    "row_count": 1,
+    "truncated": false,
+    "elapsed_ms": 5048.9,
+    "attempt": 3
+  }
+]

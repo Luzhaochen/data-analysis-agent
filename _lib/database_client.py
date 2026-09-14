@@ -13,7 +13,7 @@
 - PERMISSION_ERROR 权限/只读策略拒绝          → 不重试，明确告知
 - CONFIG_ERROR     配置缺失/损坏              → 修复配置（不重试）
 - CONNECTION_ERROR 连不上/连接中断            → 检查服务与网络（不重试）
-- TIMEOUT_ERROR    查询超时                    → 缩小范围/先聚合（可重试）
+- TIMEOUT_ERROR    查询超时/连接在查询中中断（2013 兜底） → 缩小范围/先聚合（可重试）
 
 设计说明：
 - 金额 Decimal → float（<1e12 时精度足够展示；精确计算请在 SQL 内完成）
@@ -296,10 +296,17 @@ def render_table(columns, rows, max_cell: int = 40) -> str:
 #   1526 分区值越界                  → PARTITION_ERROR
 #   1142/1144/1145/1227 权限拒绝     → PERMISSION_ERROR（不重试）
 #   1792 只读事务拒绝写              → PERMISSION_ERROR
-#   2013 连接中断（during query）    → TIMEOUT_ERROR / 其他 → CONNECTION_ERROR
-#   3024 max_execution_time 超时     → TIMEOUT_ERROR
-#   注意：max_execution_time 只在行处理检查点计时，SLEEP() 不受限制（MySQL 文档）；
-#   客户端 read_timeout 是第二道兜底（超时 +5s，报 2013）。
+#   3024 max_execution_time 超时     → TIMEOUT_ERROR（确定是超时）
+#   2013 连接在查询中中断             → msg 含 "during query" → TIMEOUT_ERROR，否则 → CONNECTION_ERROR
+#   实测（MySQL 9.5）：max_execution_time 会打断 SLEEP()——SLEEP 提前返回 1
+#   （返回 1=被打断，0=睡满），且语句以成功结束、不产生 3024；
+#   真正跑不动的行处理查询（如大 CROSS JOIN 聚合）才会报 3024。
+#   客户端 read_timeout（timeout_s+5s）是对「服务端没能中断」场景的第二道兜底（报 2013）。
+#   2013 是「伞状」错误码：超时兜底、连接被 KILL、网络中断都报它，协议层不可区分
+#   （KILL 实测见 runs/kill-lab/retry_log.json：与超时同码同文案）。
+#   分类决策（方向 2）：先验概率上超时占绝大多数 → 仍归 TIMEOUT_ERROR（可重试，且重试
+#   新建连接、对一次性 KILL/瞬断天然自愈）；但建议文案如实列出两种可能，最终判定交给
+#   SKILL.md 工作流的语义决策。
 #   2003/2006 无法连接              → CONNECTION_ERROR
 
 
@@ -335,11 +342,19 @@ def classify_error(code: Optional[int], message: str, timeout_s: int = 30) -> di
     if code in (1142, 1144, 1145, 1227, 1792):
         return {"error_type": "PERMISSION_ERROR",
                 "suggestion": "权限/只读策略拒绝，不重试：本环境账号为 SELECT-only；写操作请用 root 在 Workbench 手工执行。"}
-    if code in (2013, 3024):
-        if code == 3024 or "during query" in msg:
+    if code == 3024:
+        return {"error_type": "TIMEOUT_ERROR",
+                "suggestion": f"查询超过 {timeout_s}s 被中断：缩小时间范围、先聚合再取明细；"
+                              "确需更长可调 config/analysis.json 的 timeout_s。"}
+    if code == 2013:
+        if "during query" in msg:
+            # 伞状码：超时兜底/KILL/断网同码同文案（KILL 实测 runs/kill-lab）。仍归
+            # TIMEOUT_ERROR 走可重试（重试新建连接，对一次性 KILL/瞬断自愈）；文案
+            # 如实列出两种可能，由 SKILL.md 工作流做最终语义判定。
             return {"error_type": "TIMEOUT_ERROR",
-                    "suggestion": f"查询超过 {timeout_s}s 被中断：缩小时间范围、先聚合再取明细；"
-                                  "确需更长可调 config/analysis.json 的 timeout_s。"}
+                    "suggestion": "连接在查询中中断：可能是查询过慢触发客户端兜底超时"
+                                  "（缩小时间范围、先聚合再取明细），也可能是连接被外部终止/网络中断"
+                                  "（重试一次即可，重试会新建连接）。"}
         return {"error_type": "CONNECTION_ERROR",
                 "suggestion": "数据库连接中断：检查 MySQL 服务（MYSQL95）是否运行。"}
     if code in (2003, 2006):
