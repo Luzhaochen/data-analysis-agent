@@ -1,0 +1,17 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# 凭据与本地配置（含账号密码，绝不提交）
+config/connection.ini
+mock_data/setup.sql
+
+# 真实公司数据（DataWorks 导出，合规红线，绝不提交）
+data_new/
+
+# 临时输出
+mock_data/_dryrun_output.txt
+
+# 运行产物（每次分析自动生成，不入库）
+runs/

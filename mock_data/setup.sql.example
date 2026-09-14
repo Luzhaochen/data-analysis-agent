@@ -1,0 +1,10 @@
+-- ============================================================
+-- 账号初始化模板
+-- 用法：复制本文件为 setup.sql，把密码改成你自己的，再用 root 执行。
+-- setup.sql 在 .gitignore 中，绝不会被提交到仓库。
+-- ============================================================
+CREATE DATABASE IF NOT EXISTS jd_demo CHARACTER SET utf8mb4;
+
+-- 只读分析账号（最小权限：只能 SELECT，安全也是作品集加分项）
+CREATE USER IF NOT EXISTS 'data_agent'@'localhost' IDENTIFIED BY '在这里设置你的密码';
+GRANT SELECT ON jd_demo.* TO 'data_agent'@'localhost';
