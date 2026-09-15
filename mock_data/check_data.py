@@ -1,23 +1,35 @@
 # -*- coding: utf-8 -*-
 """check_data.py · 数据体检：验证入库数据与生成器"已知答案"一致
 
-用只读账号 data_agent 连接（密码从 setup.sql 读取），不会改动数据。
+用只读账号 data_agent 连接（密码从 config/connection.ini 读取），不会改动数据。
 
 用法：
   .venv\\Scripts\\python mock_data\\check_data.py
 """
-import re
 import sys
+from pathlib import Path
 
 import pymysql
 
+_REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(_REPO))
+from _lib import database_client as db  # noqa: E402
+
 
 def main():
-    # 只读账号密码从 setup.sql 解析，不进对话、不进命令行
-    sql = open(__file__.replace("check_data.py", "setup.sql"), encoding="utf-8").read()
-    pw = re.search(r"IDENTIFIED BY '([^']+)'", sql).group(1)
-    conn = pymysql.connect(host="127.0.0.1", port=3306, user="data_agent",
-                           password=pw, database="jd_demo", charset="utf8mb4")
+    try:
+        dbcfg = db.load_db_config()
+    except db.ConfigError as exc:
+        print(f"配置错误：{exc}")
+        sys.exit(1)
+    conn = pymysql.connect(
+        host=dbcfg["host"],
+        port=dbcfg["port"],
+        user=dbcfg["user"],
+        password=dbcfg["password"],
+        database=dbcfg["database"],
+        charset=dbcfg["charset"],
+    )
     cur = conn.cursor()
 
     def q(sql):

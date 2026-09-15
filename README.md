@@ -21,14 +21,14 @@
 
 ```powershell
 # 1. 建库建表（root 执行，也可在 MySQL Workbench 里依次执行文件）
-mysql -u root -p < mock_data/schema.sql        # 8 张表
-mysql -u root -p < mock_data/alter_promo.sql   # 活动日历增量列
+mysql -u root -p < mock_data/schema.sql        # 自动建库 + 8 张表
 copy mock_data\setup.sql.example mock_data\setup.sql  # 复制后改成你的密码
 mysql -u root -p < mock_data/setup.sql         # 只读账号 data_agent
+copy config\connection.ini.example config\connection.ini  # 复制后填入 data_agent 密码
 
 # 2. 生成数据（约 1-3 分钟；root 密码交互输入，不进命令行/日志）
 python -m venv .venv
-.venv\Scripts\pip install pymysql
+.venv\Scripts\pip install -r requirements.txt
 .venv\Scripts\python mock_data\gen_mock_data.py
 
 # 3. 体检（对照已知答案）
@@ -88,6 +88,7 @@ python -m venv .venv
 ## 目录结构
 
 ```
+requirements.txt       # Python 依赖（pymysql）
 config/               # 连接与约定配置（connection.ini 本地文件，在 .gitignore 中）
   connection.ini.example   # 连接配置模板
   analysis.json            # 行数上限/超时/只读开关
@@ -98,8 +99,7 @@ skills/database-query/scripts/
   get_metadata.py          # 元数据查询（表/字段/索引/近似行数）
   doc_table.py             # 表文档草稿建档（草稿进 runs/drafts/）
 mock_data/             # Phase 0 交付物
-  schema.sql           # 8 张表 DDL（表/字段 COMMENT 即知识库草稿）
-  alter_promo.sql      # 活动日历增量列
+  schema.sql           # 自动建库 + 8 张表 DDL（表/字段 COMMENT 即知识库草稿）
   setup.sql.example    # 只读账号初始化模板（复制为 setup.sql 使用）
   gen_mock_data.py     # 确定性模拟数据生成器（seed=42）
   check_data.py        # 数据体检：对照已知答案

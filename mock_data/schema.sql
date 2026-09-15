@@ -1,6 +1,6 @@
 -- ============================================================
 -- DataAnalysis 数据分析智能体 · 模拟数据表结构（京东大家电风格）
--- 执行方式：root 在 jd_demo 库上执行本文件
+-- 执行方式：root 执行本文件即可（脚本会自动创建 jd_demo 库）
 --
 -- 设计要点：
 --   1. 每张表/每个字段都写 COMMENT —— information_schema 能读出来，
@@ -13,6 +13,7 @@
 --      e. refunds 会注入少量脏数据（refund_dt 早于 order_dt）
 -- ============================================================
 
+CREATE DATABASE IF NOT EXISTS jd_demo CHARACTER SET utf8mb4;
 USE jd_demo;
 
 -- 1. 品类表（一级/二级）
