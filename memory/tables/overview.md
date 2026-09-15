@@ -11,6 +11,7 @@
 | categories | 品类层级（一级/二级） | [categories.md](categories.md) | 0 |
 | users | 用户注册时间/城市/会员等级 | [users.md](users.md) | 0 |
 | promo_calendar | 促销活动日历（S/A/B 级、区间可能重叠） | [promo_calendar.md](promo_calendar.md) | 0 |
+| inventory | 库存快照（一行一天一商品一仓库） | [inventory.md](inventory.md) | 0 |
 | refunds | 退款单（退款时间/金额/原因） | ⏳ 未建档——留给自进化演示 | 0 |
 | traffic | 流量（一行一天一二级品类） | ⏳ 未建档——留给自进化演示 | 0 |
 

@@ -64,6 +64,32 @@ def load_draft_template() -> str:
     return text[i + len(DRAFT_MARK_BEGIN): j].strip()
 
 
+def fetch_table(conn, database: str, table_name: str):
+    """按表名从 information_schema 取完整 schema（columns/indexes/comment）；表不存在返回 None。
+
+    scan_tables.py 复用本函数做团队空间扫描建档——schema 事实源统一走 information_schema。
+    """
+    tables = get_metadata.fetch_all(conn, get_metadata.TABLES_SQL, (database,))
+    tables = [t for t in tables if t["TABLE_NAME"] == table_name]
+    if not tables:
+        return None
+    return {
+        "table_name": tables[0]["TABLE_NAME"],
+        "comment": tables[0]["TABLE_COMMENT"] or "",
+        "columns": [{
+            "name": c["COLUMN_NAME"],
+            "type": c["COLUMN_TYPE"],
+            "key": c["COLUMN_KEY"] or "",
+            "comment": c["COLUMN_COMMENT"] or "",
+        } for c in get_metadata.fetch_all(
+            conn, get_metadata.COLUMNS_SQL, (database, table_name)
+        )],
+        "indexes": get_metadata.build_indexes(
+            get_metadata.fetch_all(conn, get_metadata.INDEXES_SQL, (database, table_name))
+        ),
+    }
+
+
 def render_draft(table: dict) -> str:
     """把 metadata 结果渲染成草稿 Markdown。只填确定性事实，语义留待补充。"""
     name = table["table_name"]
@@ -110,27 +136,11 @@ def main() -> int:
         return 1
 
     try:
-        tables = get_metadata.fetch_all(conn, get_metadata.TABLES_SQL, (dbcfg["database"],))
-        tables = [t for t in tables if t["TABLE_NAME"] == args.table]
-        if not tables:
+        table = fetch_table(conn, dbcfg["database"], args.table)
+        if table is None:
             db.emit_error("FIELD_ERROR", f"表 {args.table} 不存在。",
                           suggestion="不带参数跑一次 get_metadata.py 查看全部表名。")
             return 1
-        table = {
-            "table_name": tables[0]["TABLE_NAME"],
-            "comment": tables[0]["TABLE_COMMENT"] or "",
-            "columns": [{
-                "name": c["COLUMN_NAME"],
-                "type": c["COLUMN_TYPE"],
-                "key": c["COLUMN_KEY"] or "",
-                "comment": c["COLUMN_COMMENT"] or "",
-            } for c in get_metadata.fetch_all(
-                conn, get_metadata.COLUMNS_SQL, (dbcfg["database"], args.table)
-            )],
-            "indexes": get_metadata.build_indexes(
-                get_metadata.fetch_all(conn, get_metadata.INDEXES_SQL, (dbcfg["database"], args.table))
-            ),
-        }
     except pymysql.MySQLError as exc:
         code = exc.args[0] if exc.args else None
         info = db.classify_error(code, str(exc))
