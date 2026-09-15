@@ -6,7 +6,7 @@
 > 核心理念：智能体好不好用，核心在 memory 知识库与自进化——把常用表、常用字段、
 > SQL 片段、语法规则沉淀为知识；会话结束时把跑通的 SQL 和确认过的口径写回知识库。
 
-## 当前进度：Phase 0（环境与模拟数据）✅ · Phase 1（确定性执行层）✅
+## 当前进度：Phase 0（环境与模拟数据）✅ · Phase 1（确定性执行层）✅ · Phase 2（知识库）✅
 
 ### 模拟数据：8 张表（京东大家电风格）
 
@@ -72,13 +72,38 @@ python -m venv .venv
 .venv\Scripts\python skills\database-query\scripts\doc_table.py --table refunds   # 草稿 → runs/drafts/
 ```
 
+## Phase 2：知识库（memory）
+
+**知识库是 agent 的核心**——常用表、常用字段、SQL 片段、语法规则沉淀为 Markdown 知识，
+新表随业务出现时由自进化途径自动建档。检索链：overview（表索引）→ 单表详情 →
+SQL 片段 → 语法规则（sql_syntax.md）。
+
+| 文件/目录 | 内容 |
+|---|---|
+| `memory/tables/模板.md` | 单表知识撰写规范：8 节对应模型写 SQL 的 8 个决策点；含草稿模板段（doc_table.py 渲染用，单一事实源） |
+| `memory/tables/` | 表索引 overview + 7 张正式表文档（用途/粒度/时间字段/字段口径/指标公式/坑/关联键）；refunds、traffic 故意留白给自进化演示 |
+| `memory/sql_syntax.md` | 规则手册：分区过滤/聚合/去重/LIMIT/性能约定——事前预防 + 报错对照双用途 |
+| `memory/sql_snippets/` | 实测跑通的 SQL 片段（每日 GMV 趋势 / 促销效果对比），文件头带适用条件与口径说明 |
+| `hooks/scan_tables.py` | 自进化途径②：扫描团队空间（mock_data/team_space/）发现新表 → 建档草稿 → 人工审阅落库 |
+
+**两条自进化途径**：
+
+- 途径① 会话 hook（Phase 4）：会话中出现未建档表 → 会话结束触发草稿建档；
+- 途径② 团队空间扫描（已落地）：业务方把新表 DDL 丢进 `mock_data/team_space/` →
+  扫描发现 → 草稿建档 → 主 Agent 审阅落库（DDL 只是「新表信号」，schema 事实源是数据库）。
+
+```powershell
+# 团队空间扫描演示（把新表 DDL 放进 mock_data/team_space/ 后）
+.venv\Scripts\python hooks\scan_tables.py
+```
+
 ## 路线图
 
 | Phase | 内容 | 状态 |
 |---|---|---|
 | 0 | 环境与模拟数据 | ✅ |
 | 1 | 确定性执行层（execute_query / get_metadata / doc_table，错误四分类） | ✅ |
-| 2 | 知识库（表知识 / SQL 片段 / 语法规则，模板化） | |
+| 2 | 知识库（表知识 / SQL 片段 / 语法规则，模板化 + 团队空间扫描） | ✅ |
 | 3 | 主编排 SKILL.md（意图解析→知识检索→SQL→校验→解读→自进化） | |
 | 4 | Hooks 自进化兜底（会话结束沉淀） | |
 | 5 | 回归评测（用例 + EXPLAIN dry-run） | |
@@ -97,13 +122,20 @@ _lib/
 skills/database-query/scripts/
   execute_query.py         # Step 4 SQL 执行入口（含 retry_log 留痕）
   get_metadata.py          # 元数据查询（表/字段/索引/近似行数）
-  doc_table.py             # 表文档草稿建档（草稿进 runs/drafts/）
+  doc_table.py             # 表文档草稿建档（按模板.md 渲染，草稿进 runs/drafts/）
+memory/               # Phase 2：知识库（agent 的核心）
+  tables/               # 模板 + overview 表索引 + 表文档
+  sql_snippets/         # 实测跑通的 SQL 片段
+  sql_syntax.md         # 语法与口径规则手册
+hooks/
+  scan_tables.py        # 团队空间扫描（自进化途径②）
 mock_data/             # Phase 0 交付物
   schema.sql           # 自动建库 + 8 张表 DDL（表/字段 COMMENT 即知识库草稿）
+  team_space/          # 模拟团队空间（业务方新表 DDL 入口）
   setup.sql.example    # 只读账号初始化模板（复制为 setup.sql 使用）
   gen_mock_data.py     # 确定性模拟数据生成器（seed=42）
   check_data.py        # 数据体检：对照已知答案
   known_answers.md     # 已知答案（业务故事 + 脏数据陷阱）
 ```
 
-后续 Phase 的 `hooks/`、`eval/` 等目录随各 Phase 提交。
+后续 Phase 的 `skills/analysis/`、`eval/` 等目录随各 Phase 提交。
