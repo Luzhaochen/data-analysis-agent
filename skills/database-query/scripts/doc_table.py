@@ -9,7 +9,8 @@
 草稿写到 out-dir（默认 runs/drafts/），不直接进 memory——审阅后落库，
 守住「语义判断由 Agent 做」的分工。
 
-TODO(Phase 2)：模板落地 memory/tables/模板.md 后，本脚本改为读取模板文件渲染。
+草稿模板来自 memory/tables/模板.md 的标记段（Phase 2 落地，单一事实源）；模板文件缺失
+或标记损坏时退回内置兜底模板（不阻塞建档）。
 """
 
 import argparse
@@ -31,19 +32,36 @@ DRAFT_TEMPLATE = """# {table}{comment}
 > 草稿（doc_table.py 自动生成，{date}）——业务含义与口径需人工补充并审阅后，才能进入 memory/tables/。
 
 - 用途：待补充
-- 粒度：待补充（一行 = 一个待补充）
-- 唯一键：{pk}
-- 时间字段候选：{time_cols}（待确认哪个是时间过滤字段——见 memory/sql_syntax.md 分区过滤约定）
+- 粒度：待补充（一行 = 一个待补充）；唯一键 {pk}
+- 时间字段：{time_cols}（待确认哪个是过滤字段——见 memory/sql_syntax.md 分区过滤约定）
 - 字段表：
 
 | 字段 | 类型 | 含义 | 口径/取值 | 备注 |
 |---|---|---|---|---|
 {field_rows}
-- 指标口径：待补充（GMV / 订单量 / 客单价等定义写在这里）
+- 指标口径：待补充
 - 注意事项/坑：待补充（至少 3 条：这张表回答什么、怎么算、有什么坑）
 - 常用过滤：待补充
 - 关联键：待补充
 """
+
+# 草稿模板的单一事实源在 memory/tables/模板.md 的标记段内（改模板不用改代码）。
+# 内置 DRAFT_TEMPLATE 只是模板文件缺失/标记损坏时的兜底，与标记段保持同构。
+DRAFT_MARK_BEGIN = "<!-- DRAFT_TEMPLATE_BEGIN -->"
+DRAFT_MARK_END = "<!-- DRAFT_TEMPLATE_END -->"
+
+
+def load_draft_template() -> str:
+    """读取 memory/tables/模板.md 标记段作为草稿模板；缺失/损坏时退回内置兜底模板。"""
+    tpl_path = _REPO / "memory" / "tables" / "模板.md"
+    try:
+        text = tpl_path.read_text(encoding="utf-8")
+    except OSError:
+        return DRAFT_TEMPLATE
+    i, j = text.find(DRAFT_MARK_BEGIN), text.find(DRAFT_MARK_END)
+    if i < 0 or j < 0 or j <= i:
+        return DRAFT_TEMPLATE
+    return text[i + len(DRAFT_MARK_BEGIN): j].strip()
 
 
 def render_draft(table: dict) -> str:
@@ -64,7 +82,8 @@ def render_draft(table: dict) -> str:
         )
         for c in table["columns"]
     )
-    return DRAFT_TEMPLATE.format(
+    template = load_draft_template()
+    return template.format(
         table=name,
         comment=f"（{table['comment']}）" if table["comment"] else "（表注释待补充）",
         date=datetime.now().strftime("%Y-%m-%d"),
