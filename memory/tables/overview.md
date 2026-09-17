@@ -20,3 +20,4 @@
 - GMV = SUM(orders.pay_amt) WHERE order_status <> 'cancelled'（按下单日 order_dt 归属）
 - 跨表聚合 1:N 关联必须先按「1」侧去重（如 orders 与 order_items）
 - 促销归属：promo_id IS NULL = 自然期
+- 促销/自然期转化率：按「天」划分（流量无订单级促销归属；促销期日 = 任一活动覆盖当日）

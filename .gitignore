@@ -15,3 +15,6 @@ mock_data/_dryrun_output.txt
 
 # 运行产物（每次分析自动生成，不入库）
 runs/
+
+# 项目级技能目录（junction 链接到 skills/，不入库）
+.claude/skills/
