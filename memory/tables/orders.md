@@ -19,9 +19,11 @@
 | promo_id | BIGINT | 参与促销活动ID | **NULL = 自然期订单** | 关联 promo_calendar |
 
 - 指标口径：
-  - GMV：SUM(pay_amt)（WHERE order_status <> 'cancelled'）
-  - 订单量：COUNT(*)（本表一行一单；跨表聚合时改为 COUNT(DISTINCT o.order_id)）
-  - 客单价：GMV / 订单量
+  - GMV（**默认**·下单口径）：SUM(pay_amt)（order_status <> 'cancelled'）——含 refunded（退款订单曾成交）
+  - 净成交额（完成口径）：SUM(pay_amt)（order_status = 'completed'）——严格已完成，排除退款；
+    行业参考：部分平台（如淘宝）的「已完成订单」按此严格口径，做外部对比时注意口径对齐
+  - 有效订单量：COUNT(*)（order_status <> 'cancelled'）；完成订单量：COUNT(*)（= 'completed'）
+  - 客单价：GMV / 订单量（与所取 GMV 口径配套，口径必须一致）
   - 自然期 GMV：SUM(pay_amt)（order_status <> 'cancelled' AND promo_id IS NULL）
 - 注意事项/坑：
   - 一个订单可含多 SKU → 与 order_items 关联聚合必须先按 order_id 去重（或先聚合再 JOIN）
@@ -29,6 +31,8 @@
   - pay_amt 应与明细 gmv 合计一致，但存在 2 条 price 漂移脏数据（对账差额 694,302.84 元）
     → 对账差异要先定位到脏数据，不要直接当成口径错误
   - cancelled 订单 pay_amt = 0 且无 pay_dt → 金额口径漏过滤会把 0 摊薄均值
+  - 业务对话中的「已完成」有歧义 → 严格 = completed（排除退款）；团队默认口径 = <> cancelled（含退款）。
+    用户未指明时按默认口径执行，但展示 SQL 时必须说明口径并询问（行业参考：淘宝「已完成订单」按严格口径）
   - pay_dt 跨天 → 按支付时间统计会与按下单日统计不一致，团队口径统一按下单日
 - 常用过滤：
   - `order_status <> 'cancelled'`（金额类指标口径）

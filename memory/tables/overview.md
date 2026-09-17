@@ -13,7 +13,7 @@
 | promo_calendar | 促销活动日历（S/A/B 级、区间可能重叠） | [promo_calendar.md](promo_calendar.md) | 0 |
 | inventory | 库存快照（一行一天一商品一仓库） | [inventory.md](inventory.md) | 0 |
 | refunds | 退款单（退款时间/金额/原因） | ⏳ 未建档——留给自进化演示 | 0 |
-| traffic | 流量（一行一天一二级品类） | ⏳ 未建档——留给自进化演示 | 0 |
+| traffic | 流量（一行一天一二级品类：uv/pv/加购） | [traffic.md](traffic.md) | 0 |
 
 ## 口径速查（跨表高频）
 
