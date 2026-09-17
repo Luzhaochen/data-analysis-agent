@@ -6,7 +6,7 @@
 > 核心理念：智能体好不好用，核心在 memory 知识库与自进化——把常用表、常用字段、
 > SQL 片段、语法规则沉淀为知识；会话结束时把跑通的 SQL 和确认过的口径写回知识库。
 
-## 当前进度：Phase 0（环境与模拟数据）✅ · Phase 1（确定性执行层）✅ · Phase 2（知识库）✅
+## 当前进度：Phase 0（环境与模拟数据）✅ · Phase 1（确定性执行层）✅ · Phase 2（知识库）✅ · Phase 3（主编排 SKILL.md）✅
 
 ### 模拟数据：8 张表（京东大家电风格）
 
@@ -97,6 +97,20 @@ SQL 片段 → 语法规则（sql_syntax.md）。
 .venv\Scripts\python hooks\scan_tables.py
 ```
 
+## Phase 3：主编排 SKILL.md（提示词工作流）
+
+「手（执行层）+ 大脑（知识库）+ 思维（工作流）」三层架构中的思维层——模型只负责语义决策。
+
+| 文件 | 内容 |
+|---|---|
+| `skills/analysis/SKILL.md` | 主工作流：意图解析→知识检索→SQL 生成→执行重试→结果校验→解读→自进化六步；5 条硬性规则（未读 overview 不得写 SQL / 五要素不全先澄清 / 口径确认后执行 / 事实以知识库为准 / 环境只读）+ 每步自检清单 |
+| `skills/database-query/SKILL.md` | 工具使用约定：四脚本何时用/参数/返回解读/错误标准应对 |
+
+**验收**：11 道业务题迭代测试全过（5 处独立查询交叉对账分毫不差）+ 冷启动验证（新会话
+无上下文，7 项行为清单全过、数字与标准答案一致）——见 `runs/phase3-iter/iter_log.md`
+与 `docs/Phase3-面试复盘.md`。冷启动会话中模型**独立完成首次自进化**：主动提议并落库
+`monthly_conv_rate_comparison.sql`（双写法）+ 同步表文档与口径速查，全部实测跑通。
+
 ## 路线图
 
 | Phase | 内容 | 状态 |
@@ -104,7 +118,7 @@ SQL 片段 → 语法规则（sql_syntax.md）。
 | 0 | 环境与模拟数据 | ✅ |
 | 1 | 确定性执行层（execute_query / get_metadata / doc_table，错误四分类） | ✅ |
 | 2 | 知识库（表知识 / SQL 片段 / 语法规则，模板化 + 团队空间扫描） | ✅ |
-| 3 | 主编排 SKILL.md（意图解析→知识检索→SQL→校验→解读→自进化） | |
+| 3 | 主编排 SKILL.md（意图解析→知识检索→SQL→校验→解读→自进化，11 题 + 冷启动验收） | ✅ |
 | 4 | Hooks 自进化兜底（会话结束沉淀） | |
 | 5 | 回归评测（用例 + EXPLAIN dry-run） | |
 | 6 | 运行产物与安装分发 | |
@@ -119,10 +133,14 @@ config/               # 连接与约定配置（connection.ini 本地文件，�
   analysis.json            # 行数上限/超时/只读开关
 _lib/
   database_client.py       # 共享客户端：建连/输出/错误四分类
-skills/database-query/scripts/
-  execute_query.py         # Step 4 SQL 执行入口（含 retry_log 留痕）
-  get_metadata.py          # 元数据查询（表/字段/索引/近似行数）
-  doc_table.py             # 表文档草稿建档（按模板.md 渲染，草稿进 runs/drafts/）
+skills/               # 技能（Phase 3）
+  analysis/SKILL.md     # 主工作流（Step 1~6 提示词）
+  database-query/
+    SKILL.md            # 工具使用约定
+    scripts/
+      execute_query.py  # Step 4 SQL 执行入口（含 retry_log 留痕）
+      get_metadata.py   # 元数据查询（表/字段/索引/近似行数）
+      doc_table.py      # 表文档草稿建档（按模板.md 渲染，草稿进 runs/drafts/）
 memory/               # Phase 2：知识库（agent 的核心）
   tables/               # 模板 + overview 表索引 + 表文档
   sql_snippets/         # 实测跑通的 SQL 片段
@@ -138,4 +156,4 @@ mock_data/             # Phase 0 交付物
   known_answers.md     # 已知答案（业务故事 + 脏数据陷阱）
 ```
 
-后续 Phase 的 `skills/analysis/`、`eval/` 等目录随各 Phase 提交。
+后续 Phase 的 `eval/` 等目录随各 Phase 提交。
