@@ -6,7 +6,7 @@
 > 核心理念：智能体好不好用，核心在 memory 知识库与自进化——把常用表、常用字段、
 > SQL 片段、语法规则沉淀为知识；会话结束时把跑通的 SQL 和确认过的口径写回知识库。
 
-## 当前进度：Phase 0（环境与模拟数据）✅ · Phase 1（确定性执行层）✅ · Phase 2（知识库）✅ · Phase 3（主编排 SKILL.md）✅ · Phase 4（Hooks 自进化兜底）✅
+## 当前进度：Phase 0（环境与模拟数据）✅ · Phase 1（确定性执行层）✅ · Phase 2（知识库）✅ · Phase 3（主编排 SKILL.md）✅ · Phase 4（Hooks 自进化兜底）✅ · Phase 5（回归评测）✅
 
 ### 模拟数据：8 张表（京东大家电风格）
 
@@ -125,6 +125,23 @@ SQL 片段 → 语法规则（sql_syntax.md）。
 钩子做确定性兜底（使用频次计数/草稿骨架/幂等）。端到端验收：留白表 refunds 被真实
 会话触发完整建档（模型落库 + 钩子计数 +1 在同一行协作）。
 
+## Phase 5：回归评测（Eval）
+
+项目的质量保险层——每次改 SKILL.md 或知识库后跑一遍，改坏立现：
+
+- `eval/cases.json`：15 用例（5 基础取数 / 5 口径陷阱 / 3 多步查询 / 1 澄清 / 1 拒绝），
+  参考 SQL 全部来自实测跑通的测试，不用 agent 结果当答案；
+- `eval/run_eval.py`：确定性 grader（不调 LLM）——知识覆盖检查（overview 有行 +
+  详情文档存在 + 指标有口径定义）+ SQL 规则检查（must_have / must_not_have）+
+  EXPLAIN dry-run 语法验证；reject 用例断言写操作被策略层拒绝。
+
+```powershell
+.venv\Scripts\python eval\run_eval.py            # 全量回归（15/15）
+.venv\Scripts\python eval\run_eval.py --case X   # 单用例调试
+```
+
+验收：破坏测试双通过（语法错被 EXPLAIN 精确报 1064、表文档缺失被报出文件名）。
+
 ## 路线图
 
 | Phase | 内容 | 状态 |
@@ -134,7 +151,7 @@ SQL 片段 → 语法规则（sql_syntax.md）。
 | 2 | 知识库（表知识 / SQL 片段 / 语法规则，模板化 + 团队空间扫描） | ✅ |
 | 3 | 主编排 SKILL.md（意图解析→知识检索→SQL→校验→解读→自进化，11 题 + 冷启动验收） | ✅ |
 | 4 | Hooks 自进化兜底（会话结束沉淀：队列化 + 计数 + 建档 + 幂等） | ✅ |
-| 5 | 回归评测（用例 + EXPLAIN dry-run） | |
+| 5 | 回归评测（15 用例 + 知识覆盖 + SQL 规则 + EXPLAIN） | ✅ |
 | 6 | 运行产物与安装分发 | |
 | 7 | 打磨与面试包装 | |
 
@@ -164,6 +181,9 @@ hooks/
   session_evolution.py  # 会话自进化（途径①：SessionEnd 入队 / SessionStart 处理）
   echo_hook.py          # 最小调试钩子（验证事件触发）
   DEBUG.md              # 钩子调试笔记（踩坑记录）
+eval/                  # Phase 5：回归评测
+  cases.json           # 15 用例（基础/口径陷阱/多步/澄清/拒绝）
+  run_eval.py          # 确定性校验器（知识覆盖 + SQL 规则 + EXPLAIN）
 mock_data/             # Phase 0 交付物
   schema.sql           # 自动建库 + 8 张表 DDL（表/字段 COMMENT 即知识库草稿）
   team_space/          # 模拟团队空间（业务方新表 DDL 入口）
