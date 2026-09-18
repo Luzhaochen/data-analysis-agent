@@ -6,7 +6,7 @@
 > 核心理念：智能体好不好用，核心在 memory 知识库与自进化——把常用表、常用字段、
 > SQL 片段、语法规则沉淀为知识；会话结束时把跑通的 SQL 和确认过的口径写回知识库。
 
-## 当前进度：Phase 0（环境与模拟数据）✅ · Phase 1（确定性执行层）✅ · Phase 2（知识库）✅ · Phase 3（主编排 SKILL.md）✅
+## 当前进度：Phase 0（环境与模拟数据）✅ · Phase 1（确定性执行层）✅ · Phase 2（知识库）✅ · Phase 3（主编排 SKILL.md）✅ · Phase 4（Hooks 自进化兜底）✅
 
 ### 模拟数据：8 张表（京东大家电风格）
 
@@ -111,6 +111,20 @@ SQL 片段 → 语法规则（sql_syntax.md）。
 与 `docs/Phase3-面试复盘.md`。冷启动会话中模型**独立完成首次自进化**：主动提议并落库
 `monthly_conv_rate_comparison.sql`（双写法）+ 同步表文档与口径速查，全部实测跑通。
 
+## Phase 4：Hooks 自进化兜底（途径①）
+
+专业人士指导的自进化途径①（会话 hook）落地——与 Phase 2 的途径②（团队空间扫描）构成闭环：
+
+- `hooks/session_evolution.py`：SessionEnd `--enqueue`（毫秒级入队，适配 1.5s 预算）
+  + SessionStart `--process`（使用计数 / 草稿建档 / 幂等 / 进化摘要注入上下文）；
+- `.claude/settings.json`：hooks 注册（`${CLAUDE_PROJECT_DIR}` 占位符，机器无关可提交）；
+- `hooks/DEBUG.md`：调试笔记（7 个踩坑：1.5s 预算、配置加载时机、计数语义陷阱
+  「出现≠使用」→ FROM/JOIN 修正等）。
+
+**两条自进化线并行**：模型按 SKILL.md Step 6 做语义自进化（写文档/片段/落库），
+钩子做确定性兜底（使用频次计数/草稿骨架/幂等）。端到端验收：留白表 refunds 被真实
+会话触发完整建档（模型落库 + 钩子计数 +1 在同一行协作）。
+
 ## 路线图
 
 | Phase | 内容 | 状态 |
@@ -119,7 +133,7 @@ SQL 片段 → 语法规则（sql_syntax.md）。
 | 1 | 确定性执行层（execute_query / get_metadata / doc_table，错误四分类） | ✅ |
 | 2 | 知识库（表知识 / SQL 片段 / 语法规则，模板化 + 团队空间扫描） | ✅ |
 | 3 | 主编排 SKILL.md（意图解析→知识检索→SQL→校验→解读→自进化，11 题 + 冷启动验收） | ✅ |
-| 4 | Hooks 自进化兜底（会话结束沉淀） | |
+| 4 | Hooks 自进化兜底（会话结束沉淀：队列化 + 计数 + 建档 + 幂等） | ✅ |
 | 5 | 回归评测（用例 + EXPLAIN dry-run） | |
 | 6 | 运行产物与安装分发 | |
 | 7 | 打磨与面试包装 | |
@@ -147,6 +161,9 @@ memory/               # Phase 2：知识库（agent 的核心）
   sql_syntax.md         # 语法与口径规则手册
 hooks/
   scan_tables.py        # 团队空间扫描（自进化途径②）
+  session_evolution.py  # 会话自进化（途径①：SessionEnd 入队 / SessionStart 处理）
+  echo_hook.py          # 最小调试钩子（验证事件触发）
+  DEBUG.md              # 钩子调试笔记（踩坑记录）
 mock_data/             # Phase 0 交付物
   schema.sql           # 自动建库 + 8 张表 DDL（表/字段 COMMENT 即知识库草稿）
   team_space/          # 模拟团队空间（业务方新表 DDL 入口）
