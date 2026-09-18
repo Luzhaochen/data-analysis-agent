@@ -5,14 +5,14 @@
 
 | 表 | 用途（一句话） | 详情文档 | 使用频次 |
 |---|---|---|---|
-| orders | 每笔订单的成交金额/状态/渠道/促销归属 | [orders.md](orders.md) | 1 |
-| order_items | 订单明细，一行一 SKU 的行级金额 | [order_items.md](order_items.md) | 1 |
+| orders | 每笔订单的成交金额/状态/渠道/促销归属 | [orders.md](orders.md) | 2 |
+| order_items | 订单明细，一行一 SKU 的行级金额 | [order_items.md](order_items.md) | 2 |
 | products | 商品名称/品牌/品类归属 | [products.md](products.md) | 0 |
 | categories | 品类层级（一级/二级） | [categories.md](categories.md) | 0 |
 | users | 用户注册时间/城市/会员等级 | [users.md](users.md) | 0 |
 | promo_calendar | 促销活动日历（S/A/B 级、区间可能重叠） | [promo_calendar.md](promo_calendar.md) | 0 |
 | inventory | 库存快照（一行一天一商品一仓库） | [inventory.md](inventory.md) | 0 |
-| refunds | 退款单（退款时间/金额/原因） | ⏳ 未建档——留给自进化演示 | 0 |
+| refunds | 每笔退款的金额/时间/原因（5 种原因），回答退款构成类问题 | [refunds.md](refunds.md) | 1 |
 | traffic | 流量（一行一天一二级品类：uv/pv/加购） | [traffic.md](traffic.md) | 0 |
 
 ## 口径速查（跨表高频）
