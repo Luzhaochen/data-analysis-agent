@@ -6,7 +6,7 @@
 > 核心理念：智能体好不好用，核心在 memory 知识库与自进化——把常用表、常用字段、
 > SQL 片段、语法规则沉淀为知识；会话结束时把跑通的 SQL 和确认过的口径写回知识库。
 
-## 当前进度：Phase 0（环境与模拟数据）✅ · Phase 1（确定性执行层）✅ · Phase 2（知识库）✅ · Phase 3（主编排 SKILL.md）✅ · Phase 4（Hooks 自进化兜底）✅ · Phase 5（回归评测）✅
+## 当前进度：Phase 0（环境与模拟数据）✅ · Phase 1（确定性执行层）✅ · Phase 2（知识库）✅ · Phase 3（主编排 SKILL.md）✅ · Phase 4（Hooks 自进化兜底）✅ · Phase 5（回归评测）✅ · Phase 6（安装分发）✅
 
 ### 模拟数据：8 张表（京东大家电风格）
 
@@ -142,6 +142,19 @@ SQL 片段 → 语法规则（sql_syntax.md）。
 
 验收：破坏测试双通过（语法错被 EXPLAIN 精确报 1064、表文档缺失被报出文件名）。
 
+## Phase 6：安装分发
+
+```powershell
+pwsh -File install.ps1             # 安装：技能 + hooks + 配置模板
+pwsh -File install.ps1 -Uninstall  # 卸载：只删自己装的东西，用户配置保留
+```
+
+- skills 用 junction 装到 `~/.claude/skills/`（指针不复制）：改仓库代码即时生效，无需重装；
+- hooks 合并进用户级 settings.json（JSON 合并不覆盖，保留已有配置）；
+- 项目级 `.claude/settings.json` 曾用于 Phase 4 开发验证，安装后 hooks 统一由用户级承载
+  （双注册实测发现并发写 state 冲突——开发期项目级、分发期用户级）；
+- 验收：两遍安装零变化；卸载后 junction/hooks 干净、用户 env/permissions 配置保留。
+
 ## 路线图
 
 | Phase | 内容 | 状态 |
@@ -152,12 +165,13 @@ SQL 片段 → 语法规则（sql_syntax.md）。
 | 3 | 主编排 SKILL.md（意图解析→知识检索→SQL→校验→解读→自进化，11 题 + 冷启动验收） | ✅ |
 | 4 | Hooks 自进化兜底（会话结束沉淀：队列化 + 计数 + 建档 + 幂等） | ✅ |
 | 5 | 回归评测（15 用例 + 知识覆盖 + SQL 规则 + EXPLAIN） | ✅ |
-| 6 | 运行产物与安装分发 | |
+| 6 | 安装分发（install.ps1 幂等安装/卸载，junction + hooks 合并） | ✅ |
 | 7 | 打磨与面试包装 | |
 
 ## 目录结构
 
 ```
+install.ps1           # 安装/卸载（幂等；junction 装技能 + 合并 hooks）
 requirements.txt       # Python 依赖（pymysql）
 config/               # 连接与约定配置（connection.ini 本地文件，在 .gitignore 中）
   connection.ini.example   # 连接配置模板
