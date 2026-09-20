@@ -2,7 +2,7 @@
 
 用法：
   python execute_query.py --sql "SELECT ..." [--format json|csv|table]
-                          [--limit N] [--dry-run] [--session-id SID] [--file query.sql]
+                          [--limit N] [--dry-run] [--session SID] [--file query.sql]
   SQL 也可从 stdin 传入（UTF-8）。
 
 职责：
@@ -50,7 +50,12 @@ LIMIT_RE = re.compile(r"\blimit\s+(\d+)(?:\s*,\s*(\d+))?(?:\s+offset\s+(\d+))?",
 def read_sql(args) -> str:
     """SQL 来源优先级：--file > --sql > stdin。"""
     if args.file:
-        return Path(args.file).read_text(encoding="utf-8")
+        try:
+            return Path(args.file).read_text(encoding="utf-8")
+        except OSError as exc:
+            db.emit_error("CONFIG_ERROR", f"--file 读取失败：{exc}",
+                          suggestion="检查文件路径是否存在、是否为 UTF-8 文本。")
+            sys.exit(1)
     if args.sql:
         return args.sql
     if not sys.stdin.isatty():
@@ -82,8 +87,12 @@ def first_keyword(sql: str) -> str:
     return (m.group(0) if m else "").lower()
 
 
-def has_trailing_content_after_semicolon(sql: str) -> bool:
-    """在引号/注释之外发现 ';' 且其后还有实质内容 → 多语句。"""
+def iter_outside_quotes(sql: str):
+    """逐字符扫描 SQL，产出引号与注释之外的 (位置, 字符)。
+
+    字符串字面量、注释里的内容不参与语法判断——多语句检测与 LIMIT 查找
+    都基于这个扫描器（SELECT 'LIMIT 20000' 这类字面量不会被误判为子句）。
+    """
     i, n = 0, len(sql)
     state = None  # None | 'sq'（单引号） | 'dq'（双引号） | 'bt'（反引号）
     while i < n:
@@ -122,15 +131,25 @@ def has_trailing_content_after_semicolon(sql: str) -> bool:
                 end = sql.find("*/", i + 2)
                 i = n if end < 0 else end + 2
                 continue
-            elif ch == ";":
-                if sql[i + 1:].strip():
-                    return True
+            yield i, ch
         i += 1
+
+
+def has_trailing_content_after_semicolon(sql: str) -> bool:
+    """在引号/注释之外发现 ';' 且其后还有实质内容 → 多语句。"""
+    for i, ch in iter_outside_quotes(sql):
+        if ch == ";" and sql[i + 1:].strip():
+            return True
     return False
 
 
 def find_limit(sql: str):
-    return LIMIT_RE.search(sql)
+    """找引号/注释之外的 LIMIT 子句（字面量 'LIMIT 20000' 不参与匹配）。"""
+    for i, _ in iter_outside_quotes(sql):
+        m = LIMIT_RE.match(sql, i)
+        if m:
+            return m
+    return None
 
 
 def clamp_explicit_limit(sql: str, m, hard: int):
@@ -160,14 +179,18 @@ def main() -> int:
     ap.add_argument("--limit", type=int, help="覆盖默认行数上限（仍受 hard_row_limit 约束）")
     ap.add_argument("--dry-run", action="store_true",
                     help="用 EXPLAIN 验证语法与执行计划，不执行查询")
-    ap.add_argument("--session-id", help="会话 ID（用于 runs/<sid>/retry_log.json 留痕）")
+    ap.add_argument("--session", "--session-id", dest="session",
+                    help="会话 ID（用于 runs/<sid>/retry_log.json 留痕；--session-id 为旧写法别名）")
     args = ap.parse_args()
+    if args.limit is not None and args.limit < 1:
+        db.emit_error("CONFIG_ERROR", "--limit 必须为正整数。")
+        return 1
 
     analysis = db.load_analysis_config()
     timeout_s = int(analysis.get("timeout_s", 30))
     hard = int(analysis.get("hard_row_limit", 10000))
     max_rows = min(args.limit or int(analysis.get("default_row_limit", 1000)), hard)
-    session_id = args.session_id or f"manual-{datetime.now():%Y%m%d-%H%M%S}"
+    session_id = args.session or f"manual-{datetime.now():%Y%m%d-%H%M%S}"
 
     sql = read_sql(args)
     sql = strip_sql(sql)

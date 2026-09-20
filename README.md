@@ -21,9 +21,9 @@
 
 ```powershell
 # 1. 建库建表（root 执行，也可在 MySQL Workbench 里依次执行文件）
-mysql -u root -p < mock_data/schema.sql        # 自动建库 + 8 张表
+cmd /c "mysql -u root -p < mock_data\schema.sql"   # 自动建库 + 8 张表（PowerShell 不支持 < 重定向，走 cmd）
 copy mock_data\setup.sql.example mock_data\setup.sql  # 复制后改成你的密码
-mysql -u root -p < mock_data/setup.sql         # 只读账号 data_agent
+cmd /c "mysql -u root -p < mock_data\setup.sql"    # 只读账号 data_agent
 copy config\connection.ini.example config\connection.ini  # 复制后填入 data_agent 密码
 
 # 2. 生成数据（约 1-3 分钟；root 密码交互输入，不进命令行/日志）
@@ -34,6 +34,8 @@ python -m venv .venv
 # 3. 体检（对照已知答案）
 .venv\Scripts\python mock_data\check_data.py
 ```
+
+> 注意：schema.sql 开头会 DROP 同名表再重建——重跑即清空 jd_demo 现有数据。
 
 ### 安全约定
 
@@ -116,8 +118,10 @@ SQL 片段 → 语法规则（sql_syntax.md）。
 专业人士指导的自进化途径①（会话 hook）落地——与 Phase 2 的途径②（团队空间扫描）构成闭环：
 
 - `hooks/session_evolution.py`：SessionEnd `--enqueue`（毫秒级入队，适配 1.5s 预算）
-  + SessionStart `--process`（使用计数 / 草稿建档 / 幂等 / 进化摘要注入上下文）；
-- `.claude/settings.json`：hooks 注册（`${CLAUDE_PROJECT_DIR}` 占位符，机器无关可提交）；
+  + SessionStart `--process`（使用计数 / 草稿建档 / 幂等 / 失败重试 / 进化摘要注入上下文）；
+  带 cwd 守卫——用户级安装下只处理本仓库内的会话，其他项目的 SQL 不计入使用频次；
+- `.claude/settings.json`：开发期项目级 hooks 注册（`${CLAUDE_PROJECT_DIR}` 占位符，机器无关可提交）；
+  Phase 6 安装分发后项目级已退役，由用户级承载（见 Phase 6）；
 - `hooks/DEBUG.md`：调试笔记（7 个踩坑：1.5s 预算、配置加载时机、计数语义陷阱
   「出现≠使用」→ FROM/JOIN 修正等）。
 
@@ -140,6 +144,9 @@ SQL 片段 → 语法规则（sql_syntax.md）。
 .venv\Scripts\python eval\run_eval.py --case X   # 单用例调试
 ```
 
+> 前置条件：知识覆盖与 SQL 规则检查是纯本地确定性检查；EXPLAIN dry-run 与 reject
+> 防线用例需要 MySQL 在线且已灌入 seed=42 数据。
+
 验收：破坏测试双通过（语法错被 EXPLAIN 精确报 1064、表文档缺失被报出文件名）。
 
 ## Phase 6：安装分发
@@ -149,6 +156,8 @@ pwsh -File install.ps1             # 安装：技能 + hooks + 配置模板
 pwsh -File install.ps1 -Uninstall  # 卸载：只删自己装的东西，用户配置保留
 ```
 
+- 前置条件：已完成「快速开始」（.venv 与依赖就绪）——hooks 由仓库 venv 的 Python 承载，
+  venv 缺失时安装脚本跳过 hooks 注册并提示，补上后重跑安装即可补齐；
 - skills 用 junction 装到 `~/.claude/skills/`（指针不复制）：改仓库代码即时生效，无需重装；
 - hooks 合并进用户级 settings.json（JSON 合并不覆盖，保留已有配置）；
 - 项目级 `.claude/settings.json` 曾用于 Phase 4 开发验证，安装后 hooks 统一由用户级承载

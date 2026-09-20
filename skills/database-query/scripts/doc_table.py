@@ -14,6 +14,7 @@
 """
 
 import argparse
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -90,6 +91,21 @@ def fetch_table(conn, database: str, table_name: str):
     }
 
 
+def _safe_format(template: str, **values) -> str:
+    """str.format 的容错版：模板里出现字面 {（如示例 JSON）时不会被当成占位符。
+
+    只替换已知占位符名，未知花括号原样保留——模板是「单一事实源」，
+    不该因为加了一段示例代码就 KeyError。
+    """
+    pattern = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
+
+    def repl(m):
+        key = m.group(1)
+        return str(values[key]) if key in values else m.group(0)
+
+    return pattern.sub(repl, template)
+
+
 def render_draft(table: dict) -> str:
     """把 metadata 结果渲染成草稿 Markdown。只填确定性事实，语义留待补充。"""
     name = table["table_name"]
@@ -109,7 +125,8 @@ def render_draft(table: dict) -> str:
         for c in table["columns"]
     )
     template = load_draft_template()
-    return template.format(
+    return _safe_format(
+        template,
         table=name,
         comment=f"（{table['comment']}）" if table["comment"] else "（表注释待补充）",
         date=datetime.now().strftime("%Y-%m-%d"),

@@ -10,6 +10,9 @@ mock_data/setup.sql
 # 真实公司数据（DataWorks 导出，合规红线，绝不提交）
 data_new/
 
+# 个人职业信息文档（保持本地，不提交）
+行动方案.md
+
 # 临时输出
 mock_data/_dryrun_output.txt
 

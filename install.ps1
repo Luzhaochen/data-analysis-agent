@@ -1,3 +1,4 @@
+#Requires -Version 7.0  # ConvertFrom-Json -AsHashtable 等是 PS7 语法；5.1 会得到清晰报错，而不是写出带 BOM 的 settings.json
 # ============================================================
 # install.ps1 —— DataAnalysis 数据分析智能体 安装 / 卸载（幂等）
 #
@@ -12,6 +13,8 @@
 #   保留用户已有配置（框架「保留已有配置与知识」要求）
 # - 幂等：跑两遍零变化；卸载只删自己建的东西（junction 与 hooks 键），
 #   connection.ini 与 runs/ 数据保留
+# - 前置检查：hooks 由仓库 .venv 的 Python 承载（安装脚本不创建 venv），
+#   venv 缺失时跳过 hooks 注册并提示，补上后重跑安装即可补齐
 # ============================================================
 
 param(
@@ -67,6 +70,14 @@ function Install-DataAgent {
     Write-Host "仓库根：$RepoRoot"
     New-Item -ItemType Directory -Force $SkillsTarget | Out-Null
 
+    # ---- 0. 前置检查：hooks 由仓库 .venv 的 Python 承载（安装脚本不负责创建） ----
+    $VenvOk = Test-Path $VenvPython
+    if (-not $VenvOk) {
+        Write-Host "  [警告] 未找到 $VenvPython" -ForegroundColor Yellow
+        Write-Host "         hooks 需要仓库虚拟环境：请先按 README「快速开始」创建 venv 并安装依赖。"
+        Write-Host "         本次跳过 hooks 注册；venv 就绪后重跑安装即可补齐（幂等）。"
+    }
+
     # ---- 1. skills junction ----
     foreach ($name in @("analysis", "database-query")) {
         $link = Join-Path $SkillsTarget $name
@@ -81,48 +92,52 @@ function Install-DataAgent {
         }
     }
 
-    # ---- 2. hooks 合并进用户级 settings.json ----
-    $settings = Read-SettingsJson
-    if ($null -eq $settings) {
-        # 原文件损坏：备份后重建
-        Copy-Item $SettingsPath $SettingsBak -Force
-        $settings = @{}
-    }
-    $hooks = @{}
-    if ($settings.ContainsKey("hooks") -and $null -ne $settings["hooks"]) {
-        $hooks = $settings["hooks"]
-    }
-    $changed = $false
-    foreach ($entry in Get-HookEntries) {
-        $ev = $entry.event
-        $evHooks = @()
-        if ($hooks.ContainsKey($ev)) { $evHooks = @($hooks[$ev]) }
-        $exists = $false
-        foreach ($grp in $evHooks) {
-            foreach ($h in @($grp.hooks)) {
-                if ($h.command -eq $entry.command -and $h.args[0] -eq $entry.args[0]) {
-                    $exists = $true
+    # ---- 2. hooks 合并进用户级 settings.json（需 venv 就绪） ----
+    if ($VenvOk) {
+        $settings = Read-SettingsJson
+        if ($null -eq $settings) {
+            # 原文件损坏：备份后重建
+            Copy-Item $SettingsPath $SettingsBak -Force
+            $settings = @{}
+        }
+        $hooks = @{}
+        if ($settings.ContainsKey("hooks") -and $null -ne $settings["hooks"]) {
+            $hooks = $settings["hooks"]
+        }
+        $changed = $false
+        foreach ($entry in Get-HookEntries) {
+            $ev = $entry.event
+            $evHooks = @()
+            if ($hooks.ContainsKey($ev)) { $evHooks = @($hooks[$ev]) }
+            $exists = $false
+            foreach ($grp in $evHooks) {
+                foreach ($h in @($grp.hooks)) {
+                    if ($h.command -eq $entry.command -and $h.args[0] -eq $entry.args[0]) {
+                        $exists = $true
+                    }
                 }
             }
-        }
-        if (-not $exists) {
-            if (-not (Test-Path $SettingsBak)) {
-                Copy-Item $SettingsPath $SettingsBak -Force -ErrorAction SilentlyContinue
+            if (-not $exists) {
+                if (-not (Test-Path $SettingsBak)) {
+                    Copy-Item $SettingsPath $SettingsBak -Force -ErrorAction SilentlyContinue
+                }
+                $newGroup = @{ hooks = @(@{ type = "command"; command = $entry.command
+                                            args = $entry.args; timeout = 30 }) }
+                $evHooks += $newGroup
+                $hooks[$ev] = $evHooks
+                $changed = $true
             }
-            $newGroup = @{ hooks = @(@{ type = "command"; command = $entry.command
-                                        args = $entry.args; timeout = 30 }) }
-            $evHooks += $newGroup
-            $hooks[$ev] = $evHooks
-            $changed = $true
         }
-    }
-    if ($changed) {
-        $settings["hooks"] = $hooks
-        Write-SettingsJson $settings
-        Write-Host "  [安装] hooks 合并进 $SettingsPath"
-        if (Test-Path $SettingsBak) { Write-Host "         （原配置已备份到 $SettingsBak）" }
+        if ($changed) {
+            $settings["hooks"] = $hooks
+            Write-SettingsJson $settings
+            Write-Host "  [安装] hooks 合并进 $SettingsPath"
+            if (Test-Path $SettingsBak) { Write-Host "         （原配置已备份到 $SettingsBak）" }
+        } else {
+            Write-Host "  [跳过] hooks 已注册"
+        }
     } else {
-        Write-Host "  [跳过] hooks 已注册"
+        Write-Host "  [跳过] hooks 注册：venv 缺失（见上方警告）"
     }
 
     # ---- 3. connection.ini 模板 ----
@@ -169,7 +184,8 @@ function Uninstall-DataAgent {
                         foreach ($grp in @($hooks[$ev])) {
                             $mine = $false
                             foreach ($h in @($grp.hooks)) {
-                                if ($h.command -eq $entry.command) { $mine = $true }
+                                # 与安装侧判重口径一致（command + args[0]），避免误删用户自己的同解释器钩子
+                                if ($h.command -eq $entry.command -and $h.args[0] -eq $entry.args[0]) { $mine = $true }
                             }
                             if (-not $mine) { $kept += $grp }
                         }
