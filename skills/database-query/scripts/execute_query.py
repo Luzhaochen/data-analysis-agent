@@ -6,7 +6,7 @@
   SQL 也可从 stdin 传入（UTF-8）。
 
 职责：
-1. 基础检查：单语句 / 只读白名单（SELECT WITH EXPLAIN SHOW DESCRIBE DESC）/ 自动补 LIMIT
+1. 基础检查：单语句 / 只读策略（黑名单拦截写操作；DB 层 SELECT-only + READ ONLY 事务兜底）/ 自动补 LIMIT
 2. 执行（--dry-run 时用 EXPLAIN 验证语法与执行计划，不抓数据）
 3. 结果输出 JSON/CSV/表格；错误一律结构化 JSON + 四分类 + 修复建议
 4. 每次尝试（成功/失败）追加进 runs/<session_id>/retry_log.json
@@ -31,8 +31,11 @@ _REPO = Path(__file__).resolve().parents[3]  # scripts/ → database-query/ → 
 sys.path.insert(0, str(_REPO))
 from _lib import database_client as db  # noqa: E402
 
-# 只读白名单（大小写不敏感；允许前置括号如 (SELECT ...) UNION ...）
-READONLY_KEYWORDS = ("select", "with", "explain", "show", "describe", "desc")
+# 只读保障两层：
+# ① 策略层黑名单（DENY_KEYWORDS + 文件读写模式检测）——快速拦截、报错清晰；
+# ② DB 层兜底——data_agent 仅 SELECT + SET SESSION TRANSACTION READ ONLY，
+#    黑名单漏掉的写操作（如 REPAIR TABLE、WITH ... DELETE）被数据库拒绝（1142/1792）。
+# 黑名单 ≠ 白名单：未列举的关键字不保证放行，最终裁决在 DB 层。
 
 # 已知写操作/会话控制关键字：策略层明确拒绝
 DENY_KEYWORDS = (
@@ -41,6 +44,7 @@ DENY_KEYWORDS = (
     "begin", "start", "commit", "rollback", "lock", "unlock", "flush",
     "kill", "load", "import", "optimize", "analyze", "cache", "prepare",
     "execute", "deallocate", "xa", "purge", "reset", "shutdown",
+    "repair", "check", "checksum", "backup", "restore",
 )
 
 # LIMIT 正则：LIMIT n / LIMIT n, m / LIMIT n OFFSET m
@@ -69,7 +73,7 @@ def strip_sql(sql: str) -> str:
 
 
 def first_keyword(sql: str) -> str:
-    """取首关键字（跳过前导空白/注释/括号，用于只读白名单检查）。"""
+    """取首关键字（跳过前导空白/注释/括号，用于策略层判定）。"""
     s = sql.lstrip()
     while True:
         if s.startswith("--") or s.startswith("#"):
@@ -88,13 +92,16 @@ def first_keyword(sql: str) -> str:
 
 
 def iter_outside_quotes(sql: str):
-    """逐字符扫描 SQL，产出引号与注释之外的 (位置, 字符)。
+    """逐字符扫描 SQL，产出引号与注释之外的 (位置, 字符, 括号深度)。
 
-    字符串字面量、注释里的内容不参与语法判断——多语句检测与 LIMIT 查找
-    都基于这个扫描器（SELECT 'LIMIT 20000' 这类字面量不会被误判为子句）。
+    字符串字面量、注释里的内容不参与语法判断——多语句检测、LIMIT 查找
+    与文件读写模式检测都基于这个扫描器（SELECT 'LIMIT 20000' 这类字面量
+    不会被误判为子句）。括号深度用于区分顶层与子查询：子查询里的 LIMIT
+    是子查询自己的行数控制，不是顶层的行数边界，不该被钳制或代替自动追加。
     """
     i, n = 0, len(sql)
     state = None  # None | 'sq'（单引号） | 'dq'（双引号） | 'bt'（反引号）
+    depth = 0
     while i < n:
         ch = sql[i]
         if state == "sq":
@@ -131,24 +138,44 @@ def iter_outside_quotes(sql: str):
                 end = sql.find("*/", i + 2)
                 i = n if end < 0 else end + 2
                 continue
-            yield i, ch
+            elif ch == "(":
+                depth += 1
+                yield i, ch, depth
+                i += 1
+                continue
+            elif ch == ")":
+                depth = max(0, depth - 1)
+                yield i, ch, depth
+                i += 1
+                continue
+            yield i, ch, depth
         i += 1
+
+
+def text_outside_quotes(sql: str) -> str:
+    """引号/注释之外的 SQL 文本拼接（供策略层模式检测，不用于改写）。"""
+    return "".join(ch for _, ch, _ in iter_outside_quotes(sql))
 
 
 def has_trailing_content_after_semicolon(sql: str) -> bool:
     """在引号/注释之外发现 ';' 且其后还有实质内容 → 多语句。"""
-    for i, ch in iter_outside_quotes(sql):
+    for i, ch, _ in iter_outside_quotes(sql):
         if ch == ";" and sql[i + 1:].strip():
             return True
     return False
 
 
 def find_limit(sql: str):
-    """找引号/注释之外的 LIMIT 子句（字面量 'LIMIT 20000' 不参与匹配）。"""
-    for i, _ in iter_outside_quotes(sql):
-        m = LIMIT_RE.match(sql, i)
-        if m:
-            return m
+    """找顶层（括号深度 0）且引号之外的 LIMIT 子句。
+
+    子查询的 LIMIT 不参与匹配——顶层查询仍应自动追加/钳制行数上限，
+    否则 fetchmany 的行数边界会被子查询 LIMIT 误导而失效。
+    """
+    for i, _, depth in iter_outside_quotes(sql):
+        if depth == 0:
+            m = LIMIT_RE.match(sql, i)
+            if m:
+                return m
     return None
 
 
@@ -213,6 +240,15 @@ def main() -> int:
         db.emit_error("PERMISSION_ERROR",
                       f"语句以 '{kw}' 开头，属写操作/会话控制，被策略拦截。",
                       suggestion="本环境只读；写操作（INSERT/UPDATE/DDL）请用 root 在 Workbench 手工执行。")
+        return 1
+    # 文件读写模式：首关键字是 SELECT 但含 INTO OUTFILE/DUMPFILE 或 LOAD_FILE()——
+    # data_agent 无 FILE 权限最终也会被 DB 拒绝，此处提前拦截给清晰报错
+    outside = text_outside_quotes(sql)
+    if re.search(r"\binto\s+(outfile|dumpfile)\b", outside, re.IGNORECASE) or \
+            re.search(r"\bload_file\s*\(", outside, re.IGNORECASE):
+        db.emit_error("PERMISSION_ERROR",
+                      "语句含 INTO OUTFILE/DUMPFILE 或 LOAD_FILE()（服务端文件读写），被策略拦截。",
+                      suggestion="本环境只读；导出结果用 --format csv；文件读写请用 root 在 Workbench 手工执行。")
         return 1
 
     # ---- 检查 3：自动 LIMIT（仅 SELECT/WITH；EXPLAIN/SHOW/DESCRIBE 不需要）----

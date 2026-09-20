@@ -50,7 +50,7 @@ python -m venv .venv
 | 文件 | 对应框架步骤 | 职责 |
 |---|---|---|
 | `_lib/database_client.py` | 共享客户端 | 读配置、统一建连（只读事务兜底）、JSON/CSV/表格三种输出、异常统一包装（绝不让 traceback 裸奔） |
-| `skills/database-query/scripts/execute_query.py` | Step 4 | 单语句/只读白名单检查、自动 LIMIT（+1 探测截断）、EXPLAIN dry-run、错误四分类 + 修复建议、retry_log 留痕 |
+| `skills/database-query/scripts/execute_query.py` | Step 4 | 单语句/只读策略拦截（黑名单 + 文件读写模式检测；DB 层 SELECT-only 兜底）、自动 LIMIT（+1 探测截断）、EXPLAIN dry-run、错误四分类 + 修复建议、retry_log 留痕 |
 | `skills/database-query/scripts/get_metadata.py` | Step 2 辅助 | information_schema：表/字段/索引/近似行数 |
 | `skills/database-query/scripts/doc_table.py` | 建档骨架 | 用 schema COMMENT 自动生成表文档草稿（语义留「待补充」，审阅后落库） |
 
@@ -138,6 +138,8 @@ SQL 片段 → 语法规则（sql_syntax.md）。
 - `eval/run_eval.py`：确定性 grader（不调 LLM）——知识覆盖检查（overview 有行 +
   详情文档存在 + 指标有口径定义）+ SQL 规则检查（must_have / must_not_have）+
   EXPLAIN dry-run 语法验证；reject 用例断言写操作被策略层拒绝。
+- 本质是「知识与参考 SQL 契约测试」：评测对象是知识库与参考 SQL 的契约，不是 Agent 行为——
+  Agent 端到端证据在 Phase 3 的 11 题迭代（真实会话答题 + 5 处交叉对账），两者分工不同。
 
 ```powershell
 .venv\Scripts\python eval\run_eval.py            # 全量回归（15/15）

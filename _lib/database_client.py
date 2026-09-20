@@ -24,9 +24,11 @@
 
 import configparser
 import csv
+import hashlib
 import io
 import json
 import os
+import re
 import sys
 import unicodedata
 from datetime import date, datetime
@@ -98,9 +100,14 @@ def load_db_config() -> dict:
     missing = [k for k in ("host", "user", "password", "database") if not sec.get(k)]
     if missing:
         raise ConfigError(f"{path} 缺少配置项：{', '.join(missing)}")
+    port_raw = sec.get("port", "3306")
+    try:
+        port = int(port_raw)
+    except ValueError as exc:
+        raise ConfigError(f"{path} 的 port 必须是整数（当前值：{port_raw!r}）") from exc
     return {
         "host": sec["host"],
-        "port": int(sec.get("port", 3306)),
+        "port": port,
         "user": sec["user"],
         "password": sec["password"],
         "database": sec["database"],
@@ -367,13 +374,24 @@ def classify_error(code: Optional[int], message: str, timeout_s: int = 30) -> di
 
 # ---------------------------------------------------------------- 运行留痕
 
+def _safe_session_dir(session_id: str) -> str:
+    """session_id 只允许安全字符，防止 ../../ 路径穿越把日志写到 runs/ 之外。
+
+    不合法时用哈希派生目录名——同 session_id 仍映射到同一目录，留痕可追踪。
+    """
+    if re.fullmatch(r"[A-Za-z0-9_-]+", session_id):
+        return session_id
+    return "manual-" + hashlib.sha256(session_id.encode("utf-8")).hexdigest()[:12]
+
+
 def append_retry_log(session_id: str, entry: dict) -> Path:
     """追加一次执行尝试到 runs/<session_id>/retry_log.json（Step 4 证据留痕）。
 
     每次尝试都记录（成功或失败）；「修正」体现在下一条记录的 sql 变化上。
     attempt 序号按已有记录数自动递增；日志损坏时重来，不阻塞查询。
+    session_id 经 _safe_session_dir 清洗，杜绝路径穿越。
     """
-    path = RUNS_DIR / session_id / "retry_log.json"
+    path = RUNS_DIR / _safe_session_dir(session_id) / "retry_log.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     log = []
     if path.exists():

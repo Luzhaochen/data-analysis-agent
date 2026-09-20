@@ -193,7 +193,7 @@ def build_drafts(used: set, already_drafted: list) -> tuple:
             continue
         try:
             r = subprocess.run(
-                [str(_REPO / ".venv" / "Scripts" / "python.exe"),
+                [sys.executable,
                  str(_REPO / "skills" / "database-query" / "scripts" / "doc_table.py"),
                  "--table", t],
                 capture_output=True, timeout=120, check=False,

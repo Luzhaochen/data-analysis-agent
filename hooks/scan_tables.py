@@ -1,4 +1,4 @@
-"""scan_tables.py —— 扫描团队空间发现新表（自进化途径②：定时扫描团队空间）
+"""scan_tables.py —— 扫描团队空间发现新表（自进化途径②：团队空间扫描，可接调度器定时触发）
 
 用法：
   python hooks/scan_tables.py [--team-dir mock_data/team_space]
@@ -13,7 +13,7 @@
 
 设计要点：
 - 团队空间 DDL 只是「新表信号」；schema 事实源始终是数据库 information_schema
-- 幂等：state 记录已处理表名，重复扫描零副作用（定时任务反复跑是常态）
+- 幂等：state 记录已处理表名，重复扫描零副作用（可接调度器反复运行）
 - 落库 memory/tables/ 与更新 overview.md 是语义判断，由主 Agent 审阅草稿后完成
 """
 

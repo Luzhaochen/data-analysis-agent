@@ -54,8 +54,7 @@ Phase 7    打磨包装
 ### 2.3 把安全防线纳入回归
 
 `case_write_reject`：`DELETE FROM orders` 交给 execute_query.py 执行，**断言被策略层拒绝
-（PERMISSION_ERROR）**。只读防线（Phase 1 的白名单）从此也是回归保护对象——防线退化
-（比如白名单被改松）会被 eval 抓住。
+（PERMISSION_ERROR）**。只读防线（Phase 1 的策略层黑名单 + 账户/只读事务兜底）从此也是回归保护对象——防线退化会被 eval 抓住。
 
 ### 2.4 澄清/拒绝用例的特殊处理
 
@@ -91,7 +90,7 @@ Phase 7    打磨包装
 ### 4.3 reject 用例：安全防线的回归化
 
 - **设计**：把 DELETE 语句放进评测集，断言 PERMISSION_ERROR。
-- **意义**：Phase 1 的纵深防御（白名单/账户/只读事务）第一次有了自动验证。
+- **意义**：Phase 1 的纵深防御（策略层黑名单/账户/只读事务）第一次有了自动验证。
   以后任何人改 execute_query.py 的安全逻辑，eval 都会说话。
 
 ### 4.4 与 11 题交叉对账的关系

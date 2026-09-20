@@ -26,7 +26,7 @@ _REPO = Path(__file__).resolve().parents[1]  # eval/ → 仓库根
 CASES_PATH = _REPO / "eval" / "cases.json"
 OVERVIEW = _REPO / "memory" / "tables" / "overview.md"
 TABLES_DIR = _REPO / "memory" / "tables"
-PY = str(_REPO / ".venv" / "Scripts" / "python.exe")
+PY = sys.executable  # 用当前解释器执行 execute_query.py（评测跑在哪个环境就用哪个环境）
 EXECUTE = str(_REPO / "skills" / "database-query" / "scripts" / "execute_query.py")
 
 

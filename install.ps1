@@ -182,12 +182,18 @@ function Uninstall-DataAgent {
                     if ($hooks.ContainsKey($ev)) {
                         $kept = @()
                         foreach ($grp in @($hooks[$ev])) {
-                            $mine = $false
+                            # 组内逐条过滤：只删我们自己的钩子（判重口径与安装侧一致），
+                            # 同组里用户自己的钩子原样保留
+                            $remaining = @()
                             foreach ($h in @($grp.hooks)) {
-                                # 与安装侧判重口径一致（command + args[0]），避免误删用户自己的同解释器钩子
-                                if ($h.command -eq $entry.command -and $h.args[0] -eq $entry.args[0]) { $mine = $true }
+                                if (-not ($h.command -eq $entry.command -and $h.args[0] -eq $entry.args[0])) {
+                                    $remaining += $h
+                                }
                             }
-                            if (-not $mine) { $kept += $grp }
+                            if ($remaining.Count -gt 0) {
+                                $grp.hooks = $remaining
+                                $kept += $grp
+                            }
                         }
                         if ($kept.Count -eq 0) { $hooks.Remove($ev) } else { $hooks[$ev] = $kept }
                     }
