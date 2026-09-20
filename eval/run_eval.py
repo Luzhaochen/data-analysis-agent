@@ -12,7 +12,7 @@
 3. reject 用例：reference_sql 交给 execute_query.py 执行，断言被策略层拒绝
    （PERMISSION_ERROR）——验证只读防线真实生效。
 
-设计原则（CS621 eval 经验迁移）：确定性 grader 优先；标准答案 SQL 来自已跑通的
+设计原则：确定性 grader 优先；标准答案 SQL 来自已跑通的
 测试（11 题迭代 / 冷启动 / 知识库片段），不用「agent 跑出来的结果」当答案。
 """
 import argparse

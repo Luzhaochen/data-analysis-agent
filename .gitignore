@@ -7,11 +7,14 @@ __pycache__/
 config/connection.ini
 mock_data/setup.sql
 
-# 真实公司数据（DataWorks 导出，合规红线，绝不提交）
+# 真实业务数据（合规红线，绝不提交）
 data_new/
 
-# 个人职业信息文档（保持本地，不提交）
+# 个人文档（求职/职业规划/面试准备/内部审查，保持本地，不提交）
 行动方案.md
+docs/Phase*-面试复盘.md
+docs/当前问题清单.md
+docs/简历-项目经历.md
 
 # E2E 评测运行产物（工作目录与结果不入库；用例与驱动脚本入库）
 _eval_work/

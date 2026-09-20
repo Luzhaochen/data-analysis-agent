@@ -4,7 +4,7 @@
   .venv/Scripts/python eval_e2e/gen_golden.py               # 现场执行 reference_sql 生成 golden
   .venv/Scripts/python eval_e2e/gen_golden.py --mark-reviewed  # 人工审核通过后盖章
 
-设计原则（每一条都是可以面试讲的点）：
+设计原则：
 1. 答案与考生不同仓：reference_sql 只存在于仓库外的私有目录
    （EVAL_PRIVATE_DIR，默认仓库的兄弟目录 data-analysis-agent-eval-private），
    仓库里只留题目（eval_e2e/cases.json 无任何答案痕迹）；

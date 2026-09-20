@@ -109,8 +109,8 @@ SQL 片段 → 语法规则（sql_syntax.md）。
 | `skills/database-query/SKILL.md` | 工具使用约定：四脚本何时用/参数/返回解读/错误标准应对 |
 
 **验收**：11 道业务题迭代测试全过（5 处独立查询交叉对账分毫不差）+ 冷启动验证（新会话
-无上下文，7 项行为清单全过、数字与标准答案一致）——见 `runs/phase3-iter/iter_log.md`
-与 `docs/Phase3-面试复盘.md`。冷启动会话中模型**独立完成首次自进化**：主动提议并落库
+无上下文，7 项行为清单全过、数字与标准答案一致）——见 `runs/phase3-iter/iter_log.md`。
+冷启动会话中模型**独立完成首次自进化**：主动提议并落库
 `monthly_conv_rate_comparison.sql`（双写法）+ 同步表文档与口径速查，全部实测跑通。
 
 ## Phase 4：Hooks 自进化兜底（途径①）
@@ -208,7 +208,7 @@ pwsh -File install.ps1 -Uninstall  # 卸载：只删自己装的东西，用户�
 | 4 | Hooks 自进化兜底（会话结束沉淀：队列化 + 计数 + 建档 + 幂等） | ✅ |
 | 5 | 回归评测（15 用例 + 知识覆盖 + SQL 规则 + EXPLAIN） | ✅ |
 | 6 | 安装分发（install.ps1 幂等安装/卸载，junction + hooks 合并） | ✅ |
-| 7 | 打磨与面试包装（E2E 评测升级 ✅；demo 场景 / 面试 QA 待做） | 🚧 |
+| 7 | 打磨与演示（E2E 评测升级 ✅；demo 场景待做） | 🚧 |
 
 ## 目录结构
 

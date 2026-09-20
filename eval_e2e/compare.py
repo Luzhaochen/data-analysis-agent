@@ -4,7 +4,7 @@
   .venv/Scripts/python eval_e2e/compare.py --run eval_e2e/results/001-q2-gmv/20260920-182041
   .venv/Scripts/python eval_e2e/compare.py --case 001-q2-gmv   # 自动挑该用例最近一次运行
 
-本步的核心方法论（每条都是数据质量思维，面试可讲）：
+本步的核心方法论（每条都是数据质量思维）：
 1. 不信 Agent 自报的结果——candidate_sql 由评测方自己重新执行，结果来自独立
    执行而不是来自转录（防止"Agent 说它对"的自证循环）；
 2. 不比 SQL 字符串，比结果集——两条写法不同但语义等价的 SQL 应该同分；

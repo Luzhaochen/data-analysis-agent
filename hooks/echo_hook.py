@@ -1,7 +1,7 @@
 """echo_hook.py —— 最小调试钩子：验证事件触发与 stdin 协议
 
 只做一件事：把收到的 stdin（Claude Code 递来的 JSON 信）追加写进 runs/hook_debug.log，exit 0。
-hooks 的 stdout 没人看，调试必须写日志文件（行动方案 Phase 4 调试技巧）。
+hooks 的 stdout 没人看，调试必须写日志文件。
 """
 import sys
 from datetime import datetime

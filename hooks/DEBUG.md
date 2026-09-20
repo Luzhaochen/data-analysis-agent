@@ -1,12 +1,12 @@
 # Hooks 调试笔记（Phase 4 踩坑记录）
 
-> 记录钩子开发中的全部踩坑与修复。面试素材：hooks 是"看不见 stdout"的开发场景，
+> 记录钩子开发中的全部踩坑与修复。hooks 是"看不见 stdout"的开发场景，
 > 每一个坑都对应一个工程判断。
 
 ## 踩坑清单
 
 ### 1. hooks 的 stdout 没人看 → 调试必须写日志文件
-行动方案预判的坑，实测确认。echo 钩子的唯一可靠反馈渠道是追加写
+开发前预判的坑，实测确认。echo 钩子的唯一可靠反馈渠道是追加写
 `runs/hook_debug.log`。修复方式：所有钩子内错误统一 `log()` 到 `runs/hook.log`。
 
 ### 2. settings.json 改动只在会话启动时加载
@@ -48,7 +48,7 @@ orders/users 这类常见表名会被计进本仓库 overview 的使用频次，
 要自己想清楚：装的是用户级，动作就得有仓库边界。**
 
 ### 9. 队列语义：注释与实现不符 + 失败静默
-同事 review 抓到的两个洞：① 注释写「未处理的原样保留」，实际 `unlink()` 无条件
+code review 抓到的两个洞：① 注释写「未处理的原样保留」，实际 `unlink()` 无条件
 清空整个队列；② `build_drafts` 用 `check=False` 且不判 returncode，建档失败照样
 标记已处理，不可重试。修复：失败条目带 attempts 计数写回队列（上限 3 次），
 计数/建档结果快照进条目（counted_tables / counted / drafted_tables），重试不会
