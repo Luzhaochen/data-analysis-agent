@@ -1,0 +1,27 @@
+{
+  "comment": "E2E 评测用例（v1）。question 是发给全新 Agent 会话的完整题目。本文件只有题目、没有任何答案——标准答案（reference_sql 与 golden）在仓库外的私有目录，由 gen_golden.py 生成与维护。题目与 Phase 3 迭代测试同源。",
+  "cases": [
+    {
+      "id": "001-q2-gmv",
+      "name": "Q2 实付金额/订单量/客单价",
+      "question": "请给出 2026 年 Q2 的总实付金额、有效订单量与平均客单价。按团队默认口径：排除已取消订单。请按标准分析流程作答，最后给出三个数字。",
+      "max_turns": 20,
+      "timeout_s": 600
+    },
+    {
+      "id": "002-618-daily",
+      "name": "618 活动期每日支付",
+      "question": "请给出 618 活动期（2026-06-15 ~ 2026-06-20）每日支付订单数与每日累计支付金额，按下单日归属。最后按天列出结果。",
+      "max_turns": 20,
+      "timeout_s": 600
+    },
+    {
+      "id": "003-vague-sales",
+      "name": "模糊问题 → 应澄清而非执行",
+      "question": "查一下最近的销售情况。",
+      "expected_behavior": "clarify",
+      "max_turns": 10,
+      "timeout_s": 300
+    }
+  ]
+}

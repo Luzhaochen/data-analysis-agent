@@ -13,6 +13,10 @@ data_new/
 # 个人职业信息文档（保持本地，不提交）
 行动方案.md
 
+# E2E 评测运行产物（工作目录与结果不入库；用例与驱动脚本入库）
+_eval_work/
+eval_e2e/results/
+
 # 临时输出
 mock_data/_dryrun_output.txt
 

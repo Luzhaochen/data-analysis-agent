@@ -5,8 +5,8 @@
 
 | 表 | 用途（一句话） | 详情文档 | 使用频次 |
 |---|---|---|---|
-| orders | 每笔订单的成交金额/状态/渠道/促销归属 | [orders.md](orders.md) | 3 |
-| order_items | 订单明细，一行一 SKU 的行级金额 | [order_items.md](order_items.md) | 2 |
+| orders | 每笔订单的成交金额/状态/渠道/促销归属 | [orders.md](orders.md) | 7 |
+| order_items | 订单明细，一行一 SKU 的行级金额 | [order_items.md](order_items.md) | 6 |
 | products | 商品名称/品牌/品类归属 | [products.md](products.md) | 0 |
 | categories | 品类层级（一级/二级） | [categories.md](categories.md) | 0 |
 | users | 用户注册时间/城市/会员等级 | [users.md](users.md) | 0 |

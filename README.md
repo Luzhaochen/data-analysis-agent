@@ -151,6 +151,37 @@ SQL 片段 → 语法规则（sql_syntax.md）。
 
 验收：破坏测试双通过（语法错被 EXPLAIN 精确报 1064、表文档缺失被报出文件名）。
 
+## E2E 评测（真实 Agent 测量 · v1）
+
+契约测试（上文）证明"基础设施没被改坏"；E2E 评测证明"Agent 真的会答题"——
+每次运行都是**全新隔离会话**回答真实业务题，标准答案由评测方独立执行与比对。
+
+五个脚本一条管线（`eval_e2e/`）：
+
+| 脚本 | 职责 | 对应方法论 |
+|---|---|---|
+| `driver.py` | `claude -p` 开新会话答题，stream-json 事件流落盘 | 隔离会话 + 证据采集 |
+| `gen_golden.py` | 现场执行 reference_sql 生成标准答案，双重校验（两条独立 SQL 对拍）+ 人工盖章 | 答案不抄历史 + 信任链有人签字 |
+| `compare.py` | candidate_sql 独立重执行 → 结果集归一化比对（不比 SQL 字符串） | 结果比对 + 归一化 |
+| `run_all.py` | 每题 ×3 次重复，聚合成功率 / 一致性 / 效率 | 分布而非单点 |
+| `graders.py` | 行为评分（先读知识库/先 EXPLAIN/重试≤3）+ 安全硬门槛（越权/偷答案/改知识库一票否决） | 结果对 ≠ 过程对 |
+
+**隔离设计**：标准答案（reference_sql / golden）只存在于仓库外的私有目录
+（`D:\data-analysis-agent-eval-private\`，物理隔离不进 Git）；评测工作目录
+`_eval_work/` 被自进化 hooks 的 cwd 守卫豁免（评测会话不计入使用频次）；
+评测会话注入系统规则（不改知识库、不读答案材料）。
+
+**v1 成绩（3 场景 × 3 次 = 9 个全新会话）**：001/002 结果比对 3/3、两两一致 3/3；
+003 澄清题 3/3 行为满分（真实运行验证"提问而非执行"）；安全违规 0。
+期间抓到并修复 1 个 grader 假阴性（"有问号=提问"判据误杀表格式澄清——判据必须
+对着真实输出校准）。**边界**：n=3、题目偏常规，成绩是"常规题稳定性证据"；
+裸模型基线、30 题扩充、mutation test 为 v2 计划。
+
+```powershell
+.venv\Scripts\python eval_e2e\run_all.py                 # 全量重复实验（3 场景 × 3 次）
+.venv\Scripts\python eval_e2e\gen_golden.py --mark-reviewed  # golden 人工盖章
+```
+
 ## Phase 6：安装分发
 
 ```powershell
@@ -177,7 +208,7 @@ pwsh -File install.ps1 -Uninstall  # 卸载：只删自己装的东西，用户�
 | 4 | Hooks 自进化兜底（会话结束沉淀：队列化 + 计数 + 建档 + 幂等） | ✅ |
 | 5 | 回归评测（15 用例 + 知识覆盖 + SQL 规则 + EXPLAIN） | ✅ |
 | 6 | 安装分发（install.ps1 幂等安装/卸载，junction + hooks 合并） | ✅ |
-| 7 | 打磨与面试包装 | |
+| 7 | 打磨与面试包装（E2E 评测升级 ✅；demo 场景 / 面试 QA 待做） | 🚧 |
 
 ## 目录结构
 
@@ -206,9 +237,17 @@ hooks/
   session_evolution.py  # 会话自进化（途径①：SessionEnd 入队 / SessionStart 处理）
   echo_hook.py          # 最小调试钩子（验证事件触发）
   DEBUG.md              # 钩子调试笔记（踩坑记录）
-eval/                  # Phase 5：回归评测
+eval/                  # Phase 5：契约测试（知识覆盖 + SQL 规则 + EXPLAIN）
   cases.json           # 15 用例（基础/口径陷阱/多步/澄清/拒绝）
-  run_eval.py          # 确定性校验器（知识覆盖 + SQL 规则 + EXPLAIN）
+  run_eval.py          # 确定性校验器（不调 LLM）
+eval_e2e/              # E2E 评测 v1（真实 Agent 测量）
+  cases.json           # 题目（无任何答案；答案在仓库外私有目录）
+  driver.py            # 隔离会话驱动 + 事件流采集
+  gen_golden.py        # 标准答案生成（双重校验 + 人工盖章）
+  compare.py           # 结果集归一化比对
+  run_all.py           # 重复实验 + 指标聚合
+  graders.py           # 行为评分 + 安全硬门槛
+  results/             # 运行产物（不入库）
 mock_data/             # Phase 0 交付物
   schema.sql           # 自动建库 + 8 张表 DDL（表/字段 COMMENT 即知识库草稿）
   team_space/          # 模拟团队空间（业务方新表 DDL 入口）

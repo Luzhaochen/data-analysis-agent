@@ -35,12 +35,19 @@ def _is_repo_session(cwd: str) -> bool:
     钩子是用户级安装，所有项目的新会话都会触发；只放行仓库内会话，
     否则其他项目的 SQL 会把 orders/users 这类常见表名计进本仓库
     overview 的使用频次，无关会话还会被注入 [自进化] 摘要。
+    _eval_work/ 是 E2E 评测工作目录（driver.py 在其中跑评测会话）——
+    评测不是真实使用，不计入使用频次。
     """
     try:
         p = Path(cwd).resolve()
     except OSError:
         return False
-    return p == _REPO or _REPO in p.parents
+    if p != _REPO and _REPO not in p.parents:
+        return False
+    eval_work = _REPO / "_eval_work"
+    if p == eval_work or eval_work in p.parents:
+        return False
+    return True
 
 
 def read_stdin() -> dict:
