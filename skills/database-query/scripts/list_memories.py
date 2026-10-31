@@ -18,7 +18,7 @@ MEMORY = _REPO / "memory"
 
 
 def _section(title: str) -> None:
-    print(f"\n【{title}】")
+    print(f"\n[{title}]")
 
 
 def _table_knowledge() -> None:
@@ -46,9 +46,9 @@ def _table_knowledge() -> None:
         name = p.stem.lower()
         if name == "overview" or name.startswith("模板"):
             continue
-        doc = "文档：有" if p.exists() else "文档：无"
+        doc = "doc: yes" if p.exists() else "doc: no"
         count = counts.get(name, "—")
-        print(f"  {p.stem}　{doc}　使用频次：{count}")
+        print(f"  {p.stem}　{doc}　usage: {count}")
 
 
 def _snippets() -> None:
@@ -64,7 +64,7 @@ def _snippets() -> None:
                     break
         except OSError:
             pass
-        print(f"  {p.name}：{scene or '（无场景摘要）'}")
+        print(f"  {p.name}: {scene or '(no scene summary)'}")
 
 
 def _drafts() -> None:
@@ -73,10 +73,10 @@ def _drafts() -> None:
         return
     files = sorted(drafts_dir.glob("*.md"))
     if not files:
-        print("  （无待审阅草稿）")
+        print("  (no drafts awaiting review)")
         return
     for p in files:
-        print(f"  {p.name}　状态：草稿，待用户审阅后落库")
+        print(f"  {p.name}　status: draft, awaiting user review")
 
 
 def _syntax() -> None:
@@ -86,19 +86,19 @@ def _syntax() -> None:
             lines = syntax.read_text(encoding="utf-8").splitlines()
         except OSError:
             lines = []
-        print(f"  sql_syntax.md　存在（{len(lines)} 行，通用 SQL 规则）")
+        print(f"  sql_syntax.md　present ({len(lines)} lines, general SQL rules)")
     else:
-        print("  sql_syntax.md　缺失")
+        print("  sql_syntax.md　missing")
 
 
 def main() -> int:
-    _section("表知识（memory/tables/）")
+    _section("Table knowledge (memory/tables/)")
     _table_knowledge()
-    _section("SQL 片段（memory/sql_snippets/）")
+    _section("SQL snippets (memory/sql_snippets/)")
     _snippets()
-    _section("待审阅草稿（runs/drafts/）")
+    _section("Drafts awaiting review (runs/drafts/)")
     _drafts()
-    _section("语法规则")
+    _section("Syntax rules")
     _syntax()
     return 0
 
