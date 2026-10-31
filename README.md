@@ -1,261 +1,115 @@
-# DataAnalysis 数据分析智能体（Claude Code 插件）
+# DataAnalysis Agent — knowledge-driven SQL with human-approved self-evolution
 
-以 Claude Code 插件形态实现的数据分析智能体：**知识库驱动 SQL 生成 + 会话结束自进化**。
-基于京东大家电风格的模拟数据，全链路可复现、带「已知答案」，可直接用于回归评测。
+> [中文版](README.zh-CN.md)
 
-> 核心理念：智能体好不好用，核心在 memory 知识库与自进化——把常用表、常用字段、
-> SQL 片段、语法规则沉淀为知识；会话结束时把跑通的 SQL 和确认过的口径写回知识库。
+A data-analysis agent built as a Claude Code plugin: **knowledge-base-driven SQL generation +
+session-end self-evolution, gated by human permission**. Built on deterministic mock data
+(modeled after a major e-commerce retailer) with known answers — fully reproducible and
+evaluation-ready.
 
-## 当前进度：Phase 0（环境与模拟数据）✅ · Phase 1（确定性执行层）✅ · Phase 2（知识库）✅ · Phase 3（主编排 SKILL.md）✅ · Phase 4（Hooks 自进化兜底）✅ · Phase 5（回归评测）✅ · Phase 6（安装分发）✅
+Core idea: an agent is only as good as its knowledge base. Table docs, calibers, SQL
+snippets, and syntax rules are distilled into Markdown knowledge; at the end of every
+session, the agent **proposes** what it learned (what / preview / why / source) and the
+user approves, edits, or rejects each proposal before anything is written.
 
-### 模拟数据：8 张表（京东大家电风格）
+## The three interaction ideas (course project core)
 
-`categories / products / users / orders / order_items / promo_calendar / traffic / refunds`
+1. **Permission-gated memory self-evolution** — after each session the agent proposes
+   knowledge updates with four fields (what to remember, content preview, why, source).
+   Nothing enters the knowledge base without an explicit per-item user decision.
+   A memory browser (`list_memories.py`) makes the knowledge base inspectable at any time.
+2. **Provenance-cited verification** — every SQL is displayed with each caliber annotated
+   by its source (file + section) before execution; conclusions cite their knowledge
+   sources; five post-query sanity checks (empty / magnitude / ratio / all-NULL /
+   cross-table reconciliation) report anomalies instead of hiding them.
+3. **User-curated context** — the agent reports its retrieval in one line (files read,
+   caliber adopted, its source); the knowledge base is plain Markdown the user can edit
+   directly — edit a file and the next answer changes with it.
 
-- 2025-01-01 ~ 2026-08-31，28.7 万订单 / 45.9 万明细行
-- **确定性生成**（seed=42）：任何人运行得到相同数据与相同「已知答案」，见 [mock_data/known_answers.md](mock_data/known_answers.md)
-- 内置业务故事：促销密度 33.7%→71.3%、促销 GMV 占比 43.2%→59.6%、总 GMV 同比 -1.8%、B 级活动高频低效、2026 大促恢复期被高频促销打断
-- 内置 5 类脏数据陷阱（时间矛盾 / 单位漂移 / 归属漂移 / 关联丢行 / 历史字段缺失），用于结果校验教学
-
-### 快速开始
+A Streamlit **Human Oversight Console** prototypes this interaction layer with three
+panels: verify before execution, approve memory proposals, inspect the knowledge base.
 
 ```powershell
-# 1. 建库建表（root 执行，也可在 MySQL Workbench 里依次执行文件）
-cmd /c "mysql -u root -p < mock_data\schema.sql"   # 自动建库 + 8 张表（PowerShell 不支持 < 重定向，走 cmd）
-copy mock_data\setup.sql.example mock_data\setup.sql  # 复制后改成你的密码
-cmd /c "mysql -u root -p < mock_data\setup.sql"    # 只读账号 data_agent
-copy config\connection.ini.example config\connection.ini  # 复制后填入 data_agent 密码
+streamlit run oversight_console.py
+```
 
-# 2. 生成数据（约 1-3 分钟；root 密码交互输入，不进命令行/日志）
+## Architecture
+
+Three layers — hands (deterministic scripts), brain (knowledge base), mind (workflow):
+
+| Layer | Contents |
+|---|---|
+| `skills/analysis/SKILL.md` | Six-step workflow (intent → retrieval → SQL → execute/retry → five checks → interpretation → proposal-based self-evolution) with 5 hard rules and per-step self-checks |
+| `skills/database-query/` | Deterministic scripts: `execute_query.py` (read-only policy, auto-LIMIT, EXPLAIN dry-run, four-way error classification, retry log), `get_metadata.py`, `doc_table.py`, `scan_tables.py`, `list_memories.py` |
+| `memory/` | Knowledge base: table index + per-table docs (usage / granularity / time fields / calibers / pitfalls / join keys), reusable SQL snippets, syntax rules |
+| `hooks/` | Two self-evolution paths: session hooks (queue-based usage counting + doc drafts, deterministic, reported at next session start) and team-space scanning (new-table DDL → draft → human review) |
+
+## Quick start
+
+```powershell
+# 1. Create database and tables (root; DROPs and recreates jd_demo)
+cmd /c "mysql -u root -p < mock_data\schema.sql"
+copy mock_data\setup.sql.example mock_data\setup.sql      # fill in your password
+cmd /c "mysql -u root -p < mock_data\setup.sql"            # read-only data_agent account
+copy config\connection.ini.example config\connection.ini  # fill in data_agent password
+
+# 2. Generate data (deterministic, seed=42, ~1-3 min)
 python -m venv .venv
 .venv\Scripts\pip install -r requirements.txt
 .venv\Scripts\python mock_data\gen_mock_data.py
 
-# 3. 体检（对照已知答案）
+# 3. Health check against known answers
 .venv\Scripts\python mock_data\check_data.py
 ```
 
-> 注意：schema.sql 开头会 DROP 同名表再重建——重跑即清空 jd_demo 现有数据。
+Security: the `data_agent` account is SELECT-only; credentials live in gitignored local
+files; the mock dataset includes five planted dirty-data traps for verification training.
 
-### 安全约定
+## Evaluation
 
-- 数据账号最小权限：`data_agent` 仅 SELECT
-- `setup.sql`、`connection.ini` 在 .gitignore 中，绝不上传（模板见 `setup.sql.example`）
-- 生成器入库时 root 密码通过 getpass 交互输入
+**Deterministic regression suite** (`eval/`): 15 contract-test cases — knowledge coverage,
+SQL must/must-not rules, EXPLAIN validation, and a write-rejection case. No LLM calls.
 
-## Phase 1：确定性执行层
+**End-to-end suite** (`eval_e2e/`): real isolated agent sessions answering business
+questions. Standard answers are generated from reference SQLs with independent
+cross-check queries and **human review**; answer keys live in a private directory outside
+this repository. Each run uses a fresh conversation and fresh task files, and every
+run's evidence is committed under `eval_e2e/results/`.
 
-三个确定性脚本 + 共享客户端——程序负责执行，语义判断留给 SKILL.md 工作流（Phase 3）：
-
-| 文件 | 对应框架步骤 | 职责 |
+| Case | What it measures | Result |
 |---|---|---|
-| `_lib/database_client.py` | 共享客户端 | 读配置、统一建连（只读事务兜底）、JSON/CSV/表格三种输出、异常统一包装（绝不让 traceback 裸奔） |
-| `skills/database-query/scripts/execute_query.py` | Step 4 | 单语句/只读策略拦截（黑名单 + 文件读写模式检测；DB 层 SELECT-only 兜底）、自动 LIMIT（+1 探测截断）、EXPLAIN dry-run、错误四分类 + 修复建议、retry_log 留痕 |
-| `skills/database-query/scripts/get_metadata.py` | Step 2 辅助 | information_schema：表/字段/索引/近似行数 |
-| `skills/database-query/scripts/doc_table.py` | 建档骨架 | 用 schema COMMENT 自动生成表文档草稿（语义留「待补充」，审阅后落库） |
+| 001–003 | Q2 GMV / 618 daily payments / vague question must be clarified | 3/3, 3/3, 3/3 (behavior) |
+| 004 | Refund-rate caliber before/after user approval | 3/3 correct before; **0/2 confidently wrong with an injected wrong caliber**; 2/2 correct after approval |
+| 005 | Category-attribution rule before/after approval | correct answers in both states; after approval the agent cites the approved rule |
 
-**错误四分类**（MySQL 错误码 → 分类 + 建议）：
+The injected-wrong-caliber run is a controlled ablation simulating an update that
+bypassed the approval gate: the agent followed the polluted source confidently and ran
+3–4× longer. **The user's approval is the variable that separates 0/2 from 5/5.**
 
-| error_type | 触发示例 | 应对 |
-|---|---|---|
-| PARTITION_ERROR | 日期值格式错（1525/1292）、分区越界（1526） | 检查时间过滤写法 |
-| FIELD_ERROR | 字段不存在（1054）、表不存在（1146） | 调 get_metadata.py 拿真实 schema |
-| SYNTAX_ERROR | 语法错（1064）、ONLY_FULL_GROUP_BY（1055） | 对照 memory/sql_syntax.md |
-| PERMISSION_ERROR | 权限拒绝（1142）、写语句被策略拦截 | 不重试，明确告知 |
+**User studies** (`user_study/`): (1) do provenance citations help users find planted
+caliber errors? (n = 4, counterbalanced — null result, 5/8 vs 5/8, explained by
+verification cost–benefit); (2) can users gate memory proposals? (n = 3 — checkable
+errors rejected 3/3, meaning-based errors approved 0/3 → proposal format iterated to
+require a checkable reference). Scoring and raw responses: `user_study/results.md`;
+the real-session flow: `docs/cs619-session-excerpt.md`.
 
-另有 CONFIG / CONNECTION / TIMEOUT 三类基础设施错误。每次尝试（成功或失败）写入
-`runs/<session_id>/retry_log.json`（Step 4 证据留痕，重试上限 retry_max=3 由工作流计数）。
-
-```powershell
-# 常用调用
-.venv\Scripts\python skills\database-query\scripts\get_metadata.py --brief
-.venv\Scripts\python skills\database-query\scripts\execute_query.py --sql "SELECT order_status, COUNT(*) n FROM orders GROUP BY order_status"
-.venv\Scripts\python skills\database-query\scripts\execute_query.py --dry-run --sql "SELECT * FROM orders o JOIN order_items i ON o.order_id=i.order_id"
-.venv\Scripts\python skills\database-query\scripts\doc_table.py --table refunds   # 草稿 → runs/drafts/
-```
-
-## Phase 2：知识库（memory）
-
-**知识库是 agent 的核心**——常用表、常用字段、SQL 片段、语法规则沉淀为 Markdown 知识，
-新表随业务出现时由自进化途径自动建档。检索链：overview（表索引）→ 单表详情 →
-SQL 片段 → 语法规则（sql_syntax.md）。
-
-| 文件/目录 | 内容 |
-|---|---|
-| `memory/tables/模板.md` | 单表知识撰写规范：8 节对应模型写 SQL 的 8 个决策点；含草稿模板段（doc_table.py 渲染用，单一事实源） |
-| `memory/tables/` | 表索引 overview + 7 张正式表文档（用途/粒度/时间字段/字段口径/指标公式/坑/关联键）；refunds、traffic 故意留白给自进化演示 |
-| `memory/sql_syntax.md` | 规则手册：分区过滤/聚合/去重/LIMIT/性能约定——事前预防 + 报错对照双用途 |
-| `memory/sql_snippets/` | 实测跑通的 SQL 片段（每日 GMV 趋势 / 促销效果对比），文件头带适用条件与口径说明 |
-| `hooks/scan_tables.py` | 自进化途径②：扫描团队空间（mock_data/team_space/）发现新表 → 建档草稿 → 人工审阅落库 |
-
-**两条自进化途径**：
-
-- 途径① 会话 hook（Phase 4）：会话中出现未建档表 → 会话结束触发草稿建档；
-- 途径② 团队空间扫描（已落地）：业务方把新表 DDL 丢进 `mock_data/team_space/` →
-  扫描发现 → 草稿建档 → 主 Agent 审阅落库（DDL 只是「新表信号」，schema 事实源是数据库）。
-
-```powershell
-# 团队空间扫描演示（把新表 DDL 放进 mock_data/team_space/ 后）
-.venv\Scripts\python hooks\scan_tables.py
-```
-
-## Phase 3：主编排 SKILL.md（提示词工作流）
-
-「手（执行层）+ 大脑（知识库）+ 思维（工作流）」三层架构中的思维层——模型只负责语义决策。
-
-| 文件 | 内容 |
-|---|---|
-| `skills/analysis/SKILL.md` | 主工作流：意图解析→知识检索→SQL 生成→执行重试→结果校验→解读→自进化六步；5 条硬性规则（未读 overview 不得写 SQL / 五要素不全先澄清 / 口径确认后执行 / 事实以知识库为准 / 环境只读）+ 每步自检清单 |
-| `skills/database-query/SKILL.md` | 工具使用约定：四脚本何时用/参数/返回解读/错误标准应对 |
-
-**验收**：11 道业务题迭代测试全过（5 处独立查询交叉对账分毫不差）+ 冷启动验证（新会话
-无上下文，7 项行为清单全过、数字与标准答案一致）——见 `runs/phase3-iter/iter_log.md`。
-冷启动会话中模型**独立完成首次自进化**：主动提议并落库
-`monthly_conv_rate_comparison.sql`（双写法）+ 同步表文档与口径速查，全部实测跑通。
-（现行 Step 6 已升级为「提案 → 用户许可」：每条更新展示要记什么/内容预览/为什么/来源，经用户确认、修改或拒绝后才落库。）
-
-## Phase 4：Hooks 自进化兜底（途径①）
-
-专业人士指导的自进化途径①（会话 hook）落地——与 Phase 2 的途径②（团队空间扫描）构成闭环：
-
-- `hooks/session_evolution.py`：SessionEnd `--enqueue`（毫秒级入队，适配 1.5s 预算）
-  + SessionStart `--process`（使用计数 / 草稿建档 / 幂等 / 失败重试 / 进化摘要注入上下文）；
-  带 cwd 守卫——用户级安装下只处理本仓库内的会话，其他项目的 SQL 不计入使用频次；
-- `.claude/settings.json`：开发期项目级 hooks 注册（`${CLAUDE_PROJECT_DIR}` 占位符，机器无关可提交）；
-  Phase 6 安装分发后项目级已退役，由用户级承载（见 Phase 6）；
-- `hooks/DEBUG.md`：调试笔记（7 个踩坑：1.5s 预算、配置加载时机、计数语义陷阱
-  「出现≠使用」→ FROM/JOIN 修正等）。
-
-**两条自进化线并行**：模型按 SKILL.md Step 6 做语义自进化（提案经用户确认后才写文档/片段/落库），
-钩子做确定性兜底（使用频次计数/草稿骨架/幂等）。端到端验收：留白表 refunds 被真实
-会话触发完整建档（模型落库 + 钩子计数 +1 在同一行协作）。
-
-## Phase 5：回归评测（Eval）
-
-项目的质量保险层——每次改 SKILL.md 或知识库后跑一遍，改坏立现：
-
-- `eval/cases.json`：15 用例（5 基础取数 / 5 口径陷阱 / 3 多步查询 / 1 澄清 / 1 拒绝），
-  参考 SQL 全部来自实测跑通的测试，不用 agent 结果当答案；
-- `eval/run_eval.py`：确定性 grader（不调 LLM）——知识覆盖检查（overview 有行 +
-  详情文档存在 + 指标有口径定义）+ SQL 规则检查（must_have / must_not_have）+
-  EXPLAIN dry-run 语法验证；reject 用例断言写操作被策略层拒绝。
-- 本质是「知识与参考 SQL 契约测试」：评测对象是知识库与参考 SQL 的契约，不是 Agent 行为——
-  Agent 端到端证据在 Phase 3 的 11 题迭代（真实会话答题 + 5 处交叉对账），两者分工不同。
-
-```powershell
-.venv\Scripts\python eval\run_eval.py            # 全量回归（15/15）
-.venv\Scripts\python eval\run_eval.py --case X   # 单用例调试
-```
-
-> 前置条件：知识覆盖与 SQL 规则检查是纯本地确定性检查；EXPLAIN dry-run 与 reject
-> 防线用例需要 MySQL 在线且已灌入 seed=42 数据。
-
-验收：破坏测试双通过（语法错被 EXPLAIN 精确报 1064、表文档缺失被报出文件名）。
-
-## E2E 评测（真实 Agent 测量 · v1）
-
-契约测试（上文）证明"基础设施没被改坏"；E2E 评测证明"Agent 真的会答题"——
-每次运行都是**全新隔离会话**回答真实业务题，标准答案由评测方独立执行与比对。
-
-五个脚本一条管线（`eval_e2e/`）：
-
-| 脚本 | 职责 | 对应方法论 |
-|---|---|---|
-| `driver.py` | `claude -p` 开新会话答题，stream-json 事件流落盘 | 隔离会话 + 证据采集 |
-| `gen_golden.py` | 现场执行 reference_sql 生成标准答案，双重校验（两条独立 SQL 对拍）+ 人工盖章 | 答案不抄历史 + 信任链有人签字 |
-| `compare.py` | candidate_sql 独立重执行 → 结果集归一化比对（不比 SQL 字符串） | 结果比对 + 归一化 |
-| `run_all.py` | 每题 ×3 次重复，聚合成功率 / 一致性 / 效率 | 分布而非单点 |
-| `graders.py` | 行为评分（先读知识库/先 EXPLAIN/重试≤3）+ 安全硬门槛（越权/偷答案/改知识库一票否决） | 结果对 ≠ 过程对 |
-
-**隔离设计**：标准答案（reference_sql / golden）只存在于仓库外的私有目录
-（`D:\data-analysis-agent-eval-private\`，物理隔离不进 Git）；评测工作目录
-`_eval_work/` 被自进化 hooks 的 cwd 守卫豁免（评测会话不计入使用频次）；
-评测会话注入系统规则（不改知识库、不读答案材料）。
-
-**v1 成绩（3 场景 × 3 次 = 9 个全新会话）**：001/002 结果比对 3/3、两两一致 3/3；
-003 澄清题 3/3 行为满分（真实运行验证"提问而非执行"）；安全违规 0。
-期间抓到并修复 1 个 grader 假阴性（"有问号=提问"判据误杀表格式澄清——判据必须
-对着真实输出校准）。**边界**：n=3、题目偏常规，成绩是"常规题稳定性证据"；
-裸模型基线、30 题扩充、mutation test 为 v2 计划。
-
-```powershell
-.venv\Scripts\python eval_e2e\run_all.py                 # 全量重复实验（3 场景 × 3 次）
-.venv\Scripts\python eval_e2e\gen_golden.py --mark-reviewed  # golden 人工盖章
-```
-
-## Phase 6：安装分发
-
-```powershell
-pwsh -File install.ps1             # 安装：技能 + hooks + 配置模板
-pwsh -File install.ps1 -Uninstall  # 卸载：只删自己装的东西，用户配置保留
-```
-
-- 前置条件：已完成「快速开始」（.venv 与依赖就绪）——hooks 由仓库 venv 的 Python 承载，
-  venv 缺失时安装脚本跳过 hooks 注册并提示，补上后重跑安装即可补齐；
-- skills 用 junction 装到 `~/.claude/skills/`（指针不复制）：改仓库代码即时生效，无需重装；
-- hooks 合并进用户级 settings.json（JSON 合并不覆盖，保留已有配置）；
-- 项目级 `.claude/settings.json` 曾用于 Phase 4 开发验证，安装后 hooks 统一由用户级承载
-  （双注册实测发现并发写 state 冲突——开发期项目级、分发期用户级）；
-- 验收：两遍安装零变化；卸载后 junction/hooks 干净、用户 env/permissions 配置保留。
-
-## 路线图
-
-| Phase | 内容 | 状态 |
-|---|---|---|
-| 0 | 环境与模拟数据 | ✅ |
-| 1 | 确定性执行层（execute_query / get_metadata / doc_table，错误四分类） | ✅ |
-| 2 | 知识库（表知识 / SQL 片段 / 语法规则，模板化 + 团队空间扫描） | ✅ |
-| 3 | 主编排 SKILL.md（意图解析→知识检索→SQL→校验→解读→自进化，11 题 + 冷启动验收） | ✅ |
-| 4 | Hooks 自进化兜底（会话结束沉淀：队列化 + 计数 + 建档 + 幂等） | ✅ |
-| 5 | 回归评测（15 用例 + 知识覆盖 + SQL 规则 + EXPLAIN） | ✅ |
-| 6 | 安装分发（install.ps1 幂等安装/卸载，junction + hooks 合并） | ✅ |
-| 7 | 打磨与演示（E2E 评测升级 ✅；demo 场景待做） | 🚧 |
-
-## 目录结构
+## Repository layout
 
 ```
-install.ps1           # 安装/卸载（幂等；junction 装技能 + 合并 hooks）
-requirements.txt       # Python 依赖（pymysql）
-config/               # 连接与约定配置（connection.ini 本地文件，在 .gitignore 中）
-  connection.ini.example   # 连接配置模板
-  analysis.json            # 行数上限/超时/只读开关
-_lib/
-  database_client.py       # 共享客户端：建连/输出/错误四分类
-skills/               # 技能（Phase 3）
-  analysis/SKILL.md     # 主工作流（Step 1~6 提示词）
-  database-query/
-    SKILL.md            # 工具使用约定
-    scripts/
-      execute_query.py  # Step 4 SQL 执行入口（含 retry_log 留痕）
-      get_metadata.py   # 元数据查询（表/字段/索引/近似行数）
-      doc_table.py      # 表文档草稿建档（按模板.md 渲染，草稿进 runs/drafts/）
-memory/               # Phase 2：知识库（agent 的核心）
-  tables/               # 模板 + overview 表索引 + 表文档
-  sql_snippets/         # 实测跑通的 SQL 片段
-  sql_syntax.md         # 语法与口径规则手册
-hooks/
-  scan_tables.py        # 团队空间扫描（自进化途径②）
-  session_evolution.py  # 会话自进化（途径①：SessionEnd 入队 / SessionStart 处理）
-  echo_hook.py          # 最小调试钩子（验证事件触发）
-  DEBUG.md              # 钩子调试笔记（踩坑记录）
-eval/                  # Phase 5：契约测试（知识覆盖 + SQL 规则 + EXPLAIN）
-  cases.json           # 15 用例（基础/口径陷阱/多步/澄清/拒绝）
-  run_eval.py          # 确定性校验器（不调 LLM）
-eval_e2e/              # E2E 评测 v1（真实 Agent 测量）
-  cases.json           # 题目（无任何答案；答案在仓库外私有目录）
-  driver.py            # 隔离会话驱动 + 事件流采集
-  gen_golden.py        # 标准答案生成（双重校验 + 人工盖章）
-  compare.py           # 结果集归一化比对
-  run_all.py           # 重复实验 + 指标聚合
-  graders.py           # 行为评分 + 安全硬门槛
-  results/             # 运行产物（不入库）
-mock_data/             # Phase 0 交付物
-  schema.sql           # 自动建库 + 8 张表 DDL（表/字段 COMMENT 即知识库草稿）
-  team_space/          # 模拟团队空间（业务方新表 DDL 入口）
-  setup.sql.example    # 只读账号初始化模板（复制为 setup.sql 使用）
-  gen_mock_data.py     # 确定性模拟数据生成器（seed=42）
-  check_data.py        # 数据体检：对照已知答案
-  known_answers.md     # 已知答案（业务故事 + 脏数据陷阱）
+oversight_console.py   # Streamlit oversight console (prototype of the interaction layer)
+install.ps1            # idempotent install/uninstall (skills junction + hooks merge)
+config/                # local connection config (connection.ini gitignored)
+_lib/                  # shared database client (connection / output / error classification)
+skills/                # analysis workflow + database-query scripts
+memory/                # knowledge base: tables / sql_snippets / sql_syntax.md
+hooks/                 # session_evolution (path ①) + scan_tables (path ②)
+eval/                  # deterministic contract tests (15 cases)
+eval_e2e/              # end-to-end suite: driver / golden / compare / graders / results
+user_study/            # user-study materials, scoring, results
+mock_data/             # deterministic dataset (seed=42) + known answers
+docs/                  # session excerpts and supplementary documents
 ```
 
-后续 Phase 的 `eval/` 等目录随各 Phase 提交。
+*The knowledge base and workflow prompts are written in Chinese (the team's working
+language). The console UI and this README are in English; the agent reads the Chinese
+knowledge base natively.*
