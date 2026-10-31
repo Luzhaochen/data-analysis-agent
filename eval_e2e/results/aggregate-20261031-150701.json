@@ -1,0 +1,65 @@
+{
+  "generated_at": "2026-10-31T15:03:03",
+  "runs_per_case": 3,
+  "golden_review_status": "auto-generated",
+  "cases": {
+    "004-refund-rate": {
+      "name": "Q1 退款率（口径确认前后对比）",
+      "runs": [
+        {
+          "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\004-refund-rate\\20261031-150303",
+          "tool_calls": 13,
+          "wall_s": 87.1,
+          "cost_usd": 0.614711,
+          "result": true,
+          "failures": [],
+          "actual_rows": [
+            {
+              "refund_amt_q1": 5881693.3,
+              "gmv_q1": 252056695.62,
+              "refund_rate_pct": 2.3335
+            }
+          ],
+          "run_index": 1
+        },
+        {
+          "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\004-refund-rate\\20261031-150430",
+          "tool_calls": 12,
+          "wall_s": 83.1,
+          "cost_usd": 0.538232,
+          "result": true,
+          "failures": [],
+          "actual_rows": [
+            {
+              "q1_refund_amt": 5881693.3,
+              "q1_gmv": 252056695.62,
+              "refund_rate_pct": 2.33
+            }
+          ],
+          "run_index": 2
+        },
+        {
+          "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\004-refund-rate\\20261031-150554",
+          "tool_calls": 10,
+          "wall_s": 67.4,
+          "cost_usd": 0.415849,
+          "result": true,
+          "failures": [],
+          "actual_rows": [
+            {
+              "q1_refund_amt": 5881693.3,
+              "q1_gmv": 252056695.62,
+              "refund_rate_pct": 2.3335
+            }
+          ],
+          "run_index": 3
+        }
+      ],
+      "success_rate": "3/3",
+      "consistency": "3/3 对互相一致",
+      "avg_tool_calls": 11.67,
+      "avg_wall_s": 79.2,
+      "avg_cost_usd": 0.52
+    }
+  }
+}

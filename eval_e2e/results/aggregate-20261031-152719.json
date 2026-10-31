@@ -1,0 +1,45 @@
+{
+  "generated_at": "2026-10-31T15:23:28",
+  "runs_per_case": 2,
+  "golden_review_status": "auto-generated",
+  "cases": {
+    "005-refund-category": {
+      "name": "Q1 品类退款（新规则批准前后对比）",
+      "runs": [
+        {
+          "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\005-refund-category\\20261031-152328",
+          "tool_calls": 18,
+          "wall_s": 124.1,
+          "cost_usd": 0.6442720000000001,
+          "result": false,
+          "failures": [
+            "会话里没有真正执行过 SQL（只有 dry-run 或根本没有查询）"
+          ],
+          "run_index": 1
+        },
+        {
+          "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\005-refund-category\\20261031-152532",
+          "tool_calls": 18,
+          "wall_s": 106.7,
+          "cost_usd": 0.6035889999999999,
+          "result": false,
+          "failures": [
+            "数值个数不一致：golden 3 个 vs 实际 2 个"
+          ],
+          "actual_rows": [
+            {
+              "q1_total": 5881693.3,
+              "q1_cnt": 1179
+            }
+          ],
+          "run_index": 2
+        }
+      ],
+      "success_rate": "0/2",
+      "consistency": "无≥2次通过，无法计算",
+      "avg_tool_calls": 18.0,
+      "avg_wall_s": 115.4,
+      "avg_cost_usd": 0.62
+    }
+  }
+}

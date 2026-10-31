@@ -1,0 +1,26 @@
+{
+  "case": "004-refund-rate",
+  "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\004-refund-rate\\20261031-150303",
+  "compared_at": "2026-10-31T15:04:30",
+  "candidate_sql": "SELECT r.refund_amt_q1 AS refund_amt_q1, o.gmv_q1 AS gmv_q1, ROUND(r.refund_amt_q1 / o.gmv_q1 * 100, 4) AS refund_rate_pct FROM (SELECT ROUND(SUM(refund_amt), 2) AS refund_amt_q1 FROM refunds WHERE refund_dt >= '2026-01-01' AND refund_dt < '2026-04-01') r CROSS JOIN (SELECT ROUND(SUM(pay_amt), 2) AS gmv_q1 FROM orders WHERE order_status <> 'cancelled' AND order_dt >= '2026-01-01' AND order_dt < '2026-04-01') o",
+  "dry_run_sqls": [
+    "SELECT r.refund_amt_q1 AS refund_amt_q1, o.gmv_q1 AS gmv_q1, ROUND(r.refund_amt_q1 / o.gmv_q1 * 100, 4) AS refund_rate_pct FROM (SELECT ROUND(SUM(refund_amt), 2) AS refund_amt_q1 FROM refunds WHERE refund_dt >= '2026-01-01' AND refund_dt < '2026-04-01') r CROSS JOIN (SELECT ROUND(SUM(pay_amt), 2) AS gmv_q1 FROM orders WHERE order_status <> 'cancelled' AND order_dt >= '2026-01-01' AND order_dt < '2026-04-01') o"
+  ],
+  "golden_rows": [
+    {
+      "refund_amt": 5881693.3,
+      "gmv": 252056695.62,
+      "refund_rate_pct": 2.3335
+    }
+  ],
+  "actual_rows": [
+    {
+      "refund_amt_q1": 5881693.3,
+      "gmv_q1": 252056695.62,
+      "refund_rate_pct": 2.3335
+    }
+  ],
+  "truncated": false,
+  "result_correct": true,
+  "failures": []
+}

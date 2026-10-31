@@ -1,0 +1,26 @@
+{
+  "case": "001-q2-gmv",
+  "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\001-q2-gmv\\20260920-200746",
+  "compared_at": "2026-09-20T20:08:46",
+  "candidate_sql": "SELECT ROUND(SUM(pay_amt), 2) AS gmv, COUNT(*) AS order_cnt, ROUND(SUM(pay_amt) / COUNT(*), 2) AS avg_order_value FROM orders WHERE order_status <> 'cancelled' AND order_dt >= '2026-04-01' AND order_dt < '2026-07-01';",
+  "dry_run_sqls": [
+    "SELECT ROUND(SUM(pay_amt), 2) AS gmv, COUNT(*) AS order_cnt, ROUND(SUM(pay_amt) / COUNT(*), 2) AS avg_order_value FROM orders WHERE order_status <> 'cancelled' AND order_dt >= '2026-04-01' AND order_dt < '2026-07-01';"
+  ],
+  "golden_rows": [
+    {
+      "valid_orders": 42161,
+      "gmv": 313192219.05,
+      "avg_price": 7428.48
+    }
+  ],
+  "actual_rows": [
+    {
+      "gmv": 313192219.05,
+      "order_cnt": 42161,
+      "avg_order_value": 7428.48
+    }
+  ],
+  "truncated": false,
+  "result_correct": true,
+  "failures": []
+}

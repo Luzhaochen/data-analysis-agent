@@ -16,9 +16,8 @@ docs/Phase*-面试复盘.md
 docs/当前问题清单.md
 docs/简历-项目经历.md
 
-# E2E 评测运行产物（工作目录与结果不入库；用例与驱动脚本入库）
+# E2E 评测工作目录不入库（结果记录作为实验证据入库）
 _eval_work/
-eval_e2e/results/
 
 # 临时输出
 mock_data/_dryrun_output.txt

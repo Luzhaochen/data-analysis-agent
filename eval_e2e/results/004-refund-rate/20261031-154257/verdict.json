@@ -1,0 +1,26 @@
+{
+  "case": "004-refund-rate",
+  "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\004-refund-rate\\20261031-154257",
+  "compared_at": "2026-10-31T15:46:45",
+  "candidate_sql": "SELECT COUNT(*) AS orphan_cnt FROM refunds rf LEFT JOIN orders o ON o.order_id = rf.order_id WHERE rf.refund_dt >= '2026-01-01' AND rf.refund_dt < '2026-09-15' AND o.order_id IS NULL",
+  "dry_run_sqls": [
+    "SELECT r.q1_refund_amt, o.q1_gmv, ROUND(r.q1_refund_amt / o.q1_gmv, 6) AS refund_rate FROM (SELECT ROUND(SUM(rf.refund_amt), 2) AS q1_refund_amt FROM (SELECT order_id, SUM(refund_amt) AS refund_amt FROM refunds WHERE refund_dt >= '2026-01-01' AND refund_dt < '2026-09-15' GROUP BY order_id) rf JOIN orders oo ON oo.order_id = rf.order_id WHERE oo.order_dt >= '2026-01-01' AND oo.order_dt < '2026-04-01') r CROSS JOIN (SELECT ROUND(SUM(pay_amt), 2) AS q1_gmv FROM orders WHERE order_dt >= '2026-01-01' AND order_dt < '2026-04-01' AND order_status <> 'cancelled') o"
+  ],
+  "golden_rows": [
+    {
+      "refund_amt": 5881693.3,
+      "gmv": 252056695.62,
+      "refund_rate_pct": 2.3335
+    }
+  ],
+  "actual_rows": [
+    {
+      "orphan_cnt": 0
+    }
+  ],
+  "truncated": false,
+  "result_correct": false,
+  "failures": [
+    "数值个数不一致：golden 3 个 vs 实际 1 个"
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "generated_at": "2026-10-31T15:47:19",
+  "runs_per_case": 2,
+  "golden_review_status": "auto-generated",
+  "cases": {
+    "004-refund-rate": {
+      "name": "Q1 退款率（口径确认前后对比）",
+      "runs": [
+        {
+          "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\004-refund-rate\\20261031-154719",
+          "tool_calls": 16,
+          "wall_s": 70.2,
+          "cost_usd": 0.4738009999999999,
+          "result": false,
+          "failures": [
+            "数值超容差：golden 2.3335 vs 实际 0.023335（eps=0.01）"
+          ],
+          "actual_rows": [
+            {
+              "q1_refund_amt": 5881693.3,
+              "q1_gmv": 252056695.62,
+              "refund_rate": 0.023335
+            }
+          ],
+          "run_index": 1
+        },
+        {
+          "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\004-refund-rate\\20261031-154829",
+          "tool_calls": 11,
+          "wall_s": 75.5,
+          "cost_usd": 0.453539,
+          "result": false,
+          "failures": [
+            "数值超容差：golden 2.3335 vs 实际 0.023335（eps=0.01）"
+          ],
+          "actual_rows": [
+            {
+              "q1_refund_amt": 5881693.3,
+              "q1_gmv": 252056695.62,
+              "refund_rate": 0.023335
+            }
+          ],
+          "run_index": 2
+        }
+      ],
+      "success_rate": "0/2",
+      "consistency": "无≥2次通过，无法计算",
+      "avg_tool_calls": 13.5,
+      "avg_wall_s": 72.85,
+      "avg_cost_usd": 0.46
+    }
+  }
+}

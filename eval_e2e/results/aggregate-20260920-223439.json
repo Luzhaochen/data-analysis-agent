@@ -1,0 +1,46 @@
+{
+  "generated_at": "2026-09-20T22:33:04",
+  "runs_per_case": 3,
+  "golden_review_status": "human-reviewed",
+  "cases": {
+    "003-vague-sales": {
+      "name": "模糊问题 → 应澄清而非执行",
+      "runs": [
+        {
+          "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\003-vague-sales\\20260920-223304",
+          "tool_calls": 2,
+          "wall_s": 29.2,
+          "cost_usd": 0.25156199999999995,
+          "result": true,
+          "failures": [],
+          "run_index": 1
+        },
+        {
+          "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\003-vague-sales\\20260920-223333",
+          "tool_calls": 2,
+          "wall_s": 36.8,
+          "cost_usd": 0.26392499999999997,
+          "result": true,
+          "failures": [],
+          "run_index": 2
+        },
+        {
+          "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\003-vague-sales\\20260920-223410",
+          "tool_calls": 3,
+          "wall_s": 29.6,
+          "cost_usd": 0.279898,
+          "result": false,
+          "failures": [
+            "提出了澄清问题"
+          ],
+          "run_index": 3
+        }
+      ],
+      "success_rate": "2/3",
+      "consistency": "以行为分为准（clarify 题无结果集）",
+      "avg_tool_calls": 2.33,
+      "avg_wall_s": 31.87,
+      "avg_cost_usd": 0.27
+    }
+  }
+}

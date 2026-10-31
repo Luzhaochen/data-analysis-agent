@@ -1,0 +1,41 @@
+{
+  "generated_at": "2026-10-31T15:32:07",
+  "runs_per_case": 2,
+  "golden_review_status": "auto-generated",
+  "cases": {
+    "005-refund-category": {
+      "name": "Q1 品类退款（新规则批准前后对比）",
+      "runs": [
+        {
+          "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\005-refund-category\\20261031-153207",
+          "tool_calls": 20,
+          "wall_s": 91.4,
+          "cost_usd": 0.5810070000000002,
+          "result": false,
+          "failures": [
+            "candidate_sql 无法执行：SYNTAX_ERROR [1064] You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$sql' at line 1"
+          ],
+          "actual_rows": null,
+          "run_index": 1
+        },
+        {
+          "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\005-refund-category\\20261031-153338",
+          "tool_calls": 15,
+          "wall_s": 114.5,
+          "cost_usd": 0.637119,
+          "result": false,
+          "failures": [
+            "candidate_sql 无法执行：SYNTAX_ERROR [1064] You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$s' at line 1"
+          ],
+          "actual_rows": null,
+          "run_index": 2
+        }
+      ],
+      "success_rate": "0/2",
+      "consistency": "无≥2次通过，无法计算",
+      "avg_tool_calls": 17.5,
+      "avg_wall_s": 102.95,
+      "avg_cost_usd": 0.61
+    }
+  }
+}

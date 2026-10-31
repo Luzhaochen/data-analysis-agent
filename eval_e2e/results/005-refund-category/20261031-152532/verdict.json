@@ -1,0 +1,29 @@
+{
+  "case": "005-refund-category",
+  "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\005-refund-category\\20261031-152532",
+  "compared_at": "2026-10-31T15:27:19",
+  "candidate_sql": "SELECT ROUND(SUM(refund_amt), 2) AS q1_total, COUNT(*) AS q1_cnt FROM refunds WHERE refund_dt >= '2026-01-01' AND refund_dt < '2026-04-01'",
+  "dry_run_sqls": [
+    "WITH cat_map AS (SELECT category_id, COALESCE(parent_id, category_id) AS lvl1_id FROM categories), ref_orders AS (SELECT DISTINCT order_id FROM refunds WHERE refund_dt >= '2026-01-01' AND refund_dt < '2026-04-01'), multi AS (SELECT oi.order_id, COUNT(DISTINCT cm.lvl1_id) AS n_cat FROM order_items oi JOIN products p ON oi.product_id = p.product_id JOIN cat_map cm ON p.category_id = cm.category_id WHERE oi.order_id IN (SELECT order_id FROM ref_orders) GROUP BY oi.order_id) SELECT SUM(CASE WHEN n_cat = 1 THEN 1 ELSE 0 END) AS single_cat_orders, SUM(CASE WHEN n_cat > 1 THEN 1 ELSE 0 END) AS multi_cat_orders FROM multi",
+    "WITH cat_map AS (SELECT category_id, COALESCE(parent_id, category_id) AS lvl1_id FROM categories), refunds_q1 AS (SELECT order_id, SUM(refund_amt) AS refund_amt FROM refunds WHERE refund_dt >= '2026-01-01' AND refund_dt < '2026-04-01' GROUP BY order_id), order_cat AS (SELECT oi.order_id, cm.lvl1_id FROM order_items oi JOIN products p ON oi.product_id = p.product_id JOIN cat_map cm ON p.category_id = cm.category_id WHERE oi.order_id IN (SELECT order_id FROM refunds_q1) GROUP BY oi.order_id, cm.lvl1_id) SELECT c.category_name, ROUND(SUM(r.refund_amt), 2) AS refund_amt FROM refunds_q1 r JOIN order_cat oc ON oc.order_id = r.order_id JOIN categories c ON oc.lvl1_id = c.category_id GROUP BY oc.lvl1_id, c.category_name ORDER BY refund_amt DESC"
+  ],
+  "golden_rows": [
+    {
+      "category_lvl1": "大家电",
+      "refund_amt_attributed": 4633790.9,
+      "gmv": 196189445.58,
+      "refund_rate": 0.023619
+    }
+  ],
+  "actual_rows": [
+    {
+      "q1_total": 5881693.3,
+      "q1_cnt": 1179
+    }
+  ],
+  "truncated": false,
+  "result_correct": false,
+  "failures": [
+    "数值个数不一致：golden 3 个 vs 实际 2 个"
+  ]
+}

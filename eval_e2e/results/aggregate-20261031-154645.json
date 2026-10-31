@@ -1,0 +1,45 @@
+{
+  "generated_at": "2026-10-31T15:37:45",
+  "runs_per_case": 2,
+  "golden_review_status": "auto-generated",
+  "cases": {
+    "004-refund-rate": {
+      "name": "Q1 退款率（口径确认前后对比）",
+      "runs": [
+        {
+          "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\004-refund-rate\\20261031-153745",
+          "tool_calls": 20,
+          "wall_s": 311.8,
+          "cost_usd": 1.23295,
+          "result": false,
+          "failures": [
+            "candidate_sql 无法执行：SYNTAX_ERROR [1064] You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$sql' at line 1"
+          ],
+          "actual_rows": null,
+          "run_index": 1
+        },
+        {
+          "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\004-refund-rate\\20261031-154257",
+          "tool_calls": 17,
+          "wall_s": 227.8,
+          "cost_usd": 1.003598,
+          "result": false,
+          "failures": [
+            "数值个数不一致：golden 3 个 vs 实际 1 个"
+          ],
+          "actual_rows": [
+            {
+              "orphan_cnt": 0
+            }
+          ],
+          "run_index": 2
+        }
+      ],
+      "success_rate": "0/2",
+      "consistency": "无≥2次通过，无法计算",
+      "avg_tool_calls": 18.5,
+      "avg_wall_s": 269.8,
+      "avg_cost_usd": 1.12
+    }
+  }
+}

@@ -1,0 +1,198 @@
+{
+  "generated_at": "2026-09-20T20:05:31",
+  "runs_per_case": 3,
+  "golden_review_status": "human-reviewed",
+  "cases": {
+    "001-q2-gmv": {
+      "name": "Q2 实付金额/订单量/客单价",
+      "runs": [
+        {
+          "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\001-q2-gmv\\20260920-200531",
+          "tool_calls": 14,
+          "wall_s": 71.1,
+          "cost_usd": 0.541408,
+          "result": true,
+          "failures": [],
+          "actual_rows": [
+            {
+              "valid_order_cnt": 42161,
+              "gmv": 313192219.05,
+              "avg_order_value": 7428.48
+            }
+          ],
+          "run_index": 1
+        },
+        {
+          "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\001-q2-gmv\\20260920-200643",
+          "tool_calls": 14,
+          "wall_s": 62.6,
+          "cost_usd": 0.4901249999999999,
+          "result": true,
+          "failures": [],
+          "actual_rows": [
+            {
+              "order_cnt": 42161,
+              "gmv": 313192219.05,
+              "avg_order_value": 7428.48
+            }
+          ],
+          "run_index": 2
+        },
+        {
+          "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\001-q2-gmv\\20260920-200746",
+          "tool_calls": 12,
+          "wall_s": 59.9,
+          "cost_usd": 0.484246,
+          "result": true,
+          "failures": [],
+          "actual_rows": [
+            {
+              "gmv": 313192219.05,
+              "order_cnt": 42161,
+              "avg_order_value": 7428.48
+            }
+          ],
+          "run_index": 3
+        }
+      ],
+      "success_rate": "3/3",
+      "consistency": "3/3 对互相一致",
+      "avg_tool_calls": 13.33,
+      "avg_wall_s": 64.53,
+      "avg_cost_usd": 0.51
+    },
+    "002-618-daily": {
+      "name": "618 活动期每日支付",
+      "runs": [
+        {
+          "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\002-618-daily\\20260920-200846",
+          "tool_calls": 12,
+          "wall_s": 96.8,
+          "cost_usd": 0.603967,
+          "result": true,
+          "failures": [],
+          "actual_rows": [
+            {
+              "order_dt": "2026-06-15",
+              "paid_order_cnt": 892,
+              "paid_amt": 6322681.67
+            },
+            {
+              "order_dt": "2026-06-16",
+              "paid_order_cnt": 982,
+              "paid_amt": 6785090.78
+            },
+            {
+              "order_dt": "2026-06-17",
+              "paid_order_cnt": 808,
+              "paid_amt": 6041637.63
+            },
+            {
+              "order_dt": "2026-06-18",
+              "paid_order_cnt": 795,
+              "paid_amt": 5619235.6
+            },
+            {
+              "order_dt": "2026-06-19",
+              "paid_order_cnt": 354,
+              "paid_amt": 2790691.6
+            },
+            {
+              "order_dt": "2026-06-20",
+              "paid_order_cnt": 462,
+              "paid_amt": 3733396.99
+            }
+          ],
+          "run_index": 1
+        },
+        {
+          "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\002-618-daily\\20260920-201023",
+          "tool_calls": 14,
+          "wall_s": 85.2,
+          "cost_usd": 0.558647,
+          "result": true,
+          "failures": [],
+          "actual_rows": [
+            {
+              "order_dt": "2026-06-15",
+              "paid_order_cnt": 892,
+              "pay_amt": 6322681.67
+            },
+            {
+              "order_dt": "2026-06-16",
+              "paid_order_cnt": 982,
+              "pay_amt": 6785090.78
+            },
+            {
+              "order_dt": "2026-06-17",
+              "paid_order_cnt": 808,
+              "pay_amt": 6041637.63
+            },
+            {
+              "order_dt": "2026-06-18",
+              "paid_order_cnt": 795,
+              "pay_amt": 5619235.6
+            },
+            {
+              "order_dt": "2026-06-19",
+              "paid_order_cnt": 354,
+              "pay_amt": 2790691.6
+            },
+            {
+              "order_dt": "2026-06-20",
+              "paid_order_cnt": 462,
+              "pay_amt": 3733396.99
+            }
+          ],
+          "run_index": 2
+        },
+        {
+          "run_dir": "D:\\data-analysis-agent\\eval_e2e\\results\\002-618-daily\\20260920-201149",
+          "tool_calls": 14,
+          "wall_s": 95.0,
+          "cost_usd": 0.5976210000000001,
+          "result": true,
+          "failures": [],
+          "actual_rows": [
+            {
+              "order_dt": "2026-06-15",
+              "paid_order_cnt": 892,
+              "pay_amt_sum": 6322681.67
+            },
+            {
+              "order_dt": "2026-06-16",
+              "paid_order_cnt": 982,
+              "pay_amt_sum": 6785090.78
+            },
+            {
+              "order_dt": "2026-06-17",
+              "paid_order_cnt": 808,
+              "pay_amt_sum": 6041637.63
+            },
+            {
+              "order_dt": "2026-06-18",
+              "paid_order_cnt": 795,
+              "pay_amt_sum": 5619235.6
+            },
+            {
+              "order_dt": "2026-06-19",
+              "paid_order_cnt": 354,
+              "pay_amt_sum": 2790691.6
+            },
+            {
+              "order_dt": "2026-06-20",
+              "paid_order_cnt": 462,
+              "pay_amt_sum": 3733396.99
+            }
+          ],
+          "run_index": 3
+        }
+      ],
+      "success_rate": "3/3",
+      "consistency": "3/3 对互相一致",
+      "avg_tool_calls": 13.33,
+      "avg_wall_s": 92.33,
+      "avg_cost_usd": 0.59
+    }
+  }
+}

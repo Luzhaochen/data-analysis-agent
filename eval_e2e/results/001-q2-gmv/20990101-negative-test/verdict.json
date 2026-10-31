@@ -1,0 +1,28 @@
+{
+  "case": "001-q2-gmv",
+  "run_dir": "eval_e2e\\results\\001-q2-gmv\\20990101-negative-test",
+  "compared_at": "2026-09-20T18:32:24",
+  "candidate_sql": "SELECT COUNT(*) AS valid_order_cnt, ROUND(SUM(pay_amt), 2) AS gmv, SUM(pay_amt) / COUNT(*) AS avg_order_value FROM orders WHERE order_status <> 'cancelled' AND order_dt >= '2026-07-01' AND order_dt < '2026-10-01'",
+  "dry_run_sqls": [],
+  "golden_rows": [
+    {
+      "valid_orders": 42161,
+      "gmv": 313192219.05,
+      "avg_price": 7428.48
+    }
+  ],
+  "actual_rows": [
+    {
+      "valid_order_cnt": 21922,
+      "gmv": 161746393.3,
+      "avg_order_value": 7378.268101
+    }
+  ],
+  "truncated": false,
+  "result_correct": false,
+  "failures": [
+    "数值超容差：golden 7428.48 vs 实际 7378.268101（eps=0.01）",
+    "计数不一致：golden 42161 vs 实际 21922",
+    "数值超容差：golden 313192219.05 vs 实际 161746393.3（eps=0.01）"
+  ]
+}
