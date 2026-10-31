@@ -57,11 +57,15 @@ def almost_equal(a, b, eps: float = MONEY_EPS) -> bool:
 def cross_check(case_id: str, case: dict, primary_rows: list, cross_rows: list) -> list:
     """主 SQL 与交叉 SQL 对拍，返回不一致清单（空列表 = 拍平）。
 
-    v1 只实现两种对拍规则，够覆盖现有两题；新题型再补新规则：
+    已实现四种对拍规则（每类题型一条，新题型再补新规则）：
     - monthly_sum_then_total：交叉 SQL 按月分组 → 逐月求和必须等于主 SQL 的总量，
       客单价 = round(总额/总量, 2) 必须与主 SQL 一致（001 题）；
     - detail_sum_then_total：主 SQL 给逐行明细 → 明细逐行求和必须等于交叉 SQL 的总量
-      （002 题）。
+      （002 题）；
+    - components_ratio：主 SQL 给比率及其分子分母 → 与交叉 SQL 独立算出的分子/分母/
+      推导比率一致（004 题）；
+    - share_table_then_total：主 SQL 给分摊表最大值 → 与交叉 SQL 全表分摊的最大值、
+      合计一致（005 题）。
     """
     errors = []
     ctype = case["crosscheck"]["type"]
@@ -91,6 +95,29 @@ def cross_check(case_id: str, case: dict, primary_rows: list, cross_rows: list) 
             errors.append(f"订单量对拍不一致：明细求和 {cnt_sum} vs 总量 {int(t['total_cnt'])}")
         if not almost_equal(amt_sum, t["total_amt"]):
             errors.append(f"金额对拍不一致：明细求和 {amt_sum} vs 总量 {t['total_amt']}")
+    elif ctype == "components_ratio":
+        p = primary_rows[0]
+        t = cross_rows[0]
+        nk = case["crosscheck"]["numerator_key"]
+        dk = case["crosscheck"]["denominator_key"]
+        rk = case["crosscheck"]["rate_key"]
+        if not almost_equal(p[nk], t[nk]):
+            errors.append(f"分子对拍不一致：主 SQL {p[nk]} vs 交叉 SQL {t[nk]}")
+        if not almost_equal(p[dk], t[dk]):
+            errors.append(f"分母对拍不一致：主 SQL {p[dk]} vs 交叉 SQL {t[dk]}")
+        derived = t[nk] / t[dk] * 100
+        if not almost_equal(p[rk], derived, 1e-4):
+            errors.append(f"比率对拍不一致：主 SQL {p[rk]} vs 推导值 {derived:.4f}")
+    elif ctype == "share_table_then_total":
+        p = primary_rows[0]
+        ak = case["crosscheck"]["amount_key"]
+        amounts = [float(r[ak]) for r in cross_rows]
+        if not almost_equal(p[ak], max(amounts)):
+            errors.append(f"最高品类对拍不一致：主 SQL {p[ak]} vs 分摊表最大值 {max(amounts)}")
+        total = sum(amounts)
+        expect = case["crosscheck"].get("expected_total")
+        if expect and not almost_equal(total, expect):
+            errors.append(f"分摊合计对拍不一致：分摊表合计 {round(total, 2)} vs 独立查询总量 {expect}")
     else:
         errors.append(f"未知对拍类型：{ctype}")
     return errors

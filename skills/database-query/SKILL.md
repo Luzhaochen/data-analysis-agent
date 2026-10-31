@@ -16,6 +16,7 @@ description: 数据库查询工具集。在需要执行 SQL（execute_query.py�
 | get_metadata.py | 字段 / 表 / 索引 / 行数不清楚时 | `[--brief]` |
 | doc_table.py | 为 memory/tables/ 无文档的表生成建档草稿 | `--table <表名>` |
 | scan_tables.py | 检查团队空间（mock_data/team_space/）新表 | 无参数 |
+| list_memories.py | 查看知识库里存了什么（表/片段/草稿/语法） | 无参数 |
 
 ## 执行 SQL（execute_query.py）
 
@@ -66,6 +67,15 @@ description: 数据库查询工具集。在需要执行 SQL（execute_query.py�
 
 - 检查 mock_data/team_space/ 的 *.sql 发现新表；已上线的表自动生成建档草稿
 - `new_tables` 非空 → 按 next_steps 审阅落库；`pending_online` 非空 → 等待业务方建表，不处理
+
+## 记忆浏览（list_memories.py）
+
+```powershell
+.venv\Scripts\python skills\database-query\scripts\list_memories.py
+```
+
+- 只读展示知识库现状：表知识（含使用频次）、SQL 片段摘要、待审阅草稿、语法规则
+- 何时用：Step 6 提案前核对现状；用户问「库里存了什么」；会话开头报告知识库状态
 
 ## 输出约定
 

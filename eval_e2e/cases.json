@@ -22,6 +22,20 @@
       "expected_behavior": "clarify",
       "max_turns": 10,
       "timeout_s": 300
+    },
+    {
+      "id": "004-refund-rate",
+      "name": "Q1 退款率（口径确认前后对比）",
+      "question": "请计算 2026 年 Q1 的退款率，并给出计算所用的三个数字：Q1 退款金额、同期 GMV、退款率（百分数）。",
+      "max_turns": 20,
+      "timeout_s": 600
+    },
+    {
+      "id": "005-refund-category",
+      "name": "Q1 品类退款（新规则批准前后对比）",
+      "question": "请给出 2026 年 Q1 退款金额最高的一级品类及其退款金额（元）。",
+      "max_turns": 20,
+      "timeout_s": 600
     }
   ]
 }
