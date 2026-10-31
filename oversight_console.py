@@ -231,12 +231,12 @@ with tab_approve:
     st.subheader(t["a_head"])
     st.caption(t["a_caption"])
     decisions = {}
-    for p in PROPOSALS:
+    for i, p in enumerate(PROPOSALS, 1):
         c = p[st.session_state.lang]
         with st.container(border=True):
-            st.markdown(f"**Proposal {p['en']['title'].split(' ·')[0]} · {c['title']}**"
+            st.markdown(f"**Proposal {i} · {c['title']}**"
                         if st.session_state.lang == "en"
-                        else f"**提案 {p['zh']['title'].split(' ·')[0]} · {c['title']}**")
+                        else f"**提案 {i} · {c['title']}**")
             st.markdown(f"- **{t['p_what']}**: {c['what']}\n- **{t['p_prev']}**: "
                         f"{c['preview']}\n- **{t['p_why']}**: {c['why']}\n"
                         f"- **{t['p_src']}**: {c['source']}")
