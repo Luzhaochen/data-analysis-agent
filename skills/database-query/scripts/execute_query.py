@@ -190,11 +190,8 @@ def clamp_explicit_limit(sql: str, m, hard: int):
 
 
 def append_limit(sql: str, limit: int) -> str:
-    """追加 LIMIT；若 SQL 以行注释结尾，插到注释之前（否则会被注释吞掉）。"""
-    m = re.search(r"(--[^\n]*|#[^\n]*)$", sql)
-    if m:
-        return sql[: m.start()] + f" LIMIT {limit} " + sql[m.start():]
-    return f"{sql} LIMIT {limit}"
+    """追加 LIMIT；独立成行——引号内的 #/-- 不会被误判为行注释，行注释也吞不掉它。"""
+    return f"{sql}\nLIMIT {limit}"
 
 
 def main() -> int:

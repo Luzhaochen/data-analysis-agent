@@ -271,7 +271,8 @@ def render_table(columns, rows, max_cell: int = 40) -> str:
     header = [cell(c) for c in columns]
     body = [[cell(r.get(c)) for c in columns] for r in rows]
     widths = [
-        max(_disp_width(header[i]), *(_disp_width(row[i]) for row in body))
+        # 空结果时 body 为空：先放表头宽度再展开，避免 max(<int>) 无迭代对象
+        max([_disp_width(header[i])] + [_disp_width(row[i]) for row in body])
         for i in range(len(columns))
     ]
 
